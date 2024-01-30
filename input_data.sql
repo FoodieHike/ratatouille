@@ -1,6 +1,3 @@
-INSERT INTO campaign (ID, Startdate, Enddate, Firstfood, Lastfood)
-VALUES ('1', '2024-01-19', '2024-01-21', 3, 2);
-
 INSERT INTO people (ID, campaign_ID, FIO, foodpreferences)
 VALUES 
 ('1', '1', 'Алексей', 'M'),

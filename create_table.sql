@@ -1,5 +1,5 @@
 CREATE TABLE Campaign (
-  ID INT PRIMARY KEY,
+  ID SERIAL PRIMARY KEY,
   Startdate DATE,
   Enddate DATE,
   Firstfood VARCHAR(255),
