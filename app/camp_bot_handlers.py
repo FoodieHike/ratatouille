@@ -1,36 +1,92 @@
-from aiogram import Router, types, F
+from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
-import psycopg2
+from aiogram.fsm.context import FSMContext
 
-
-from psycopg2 import sql
-from config import CONN_PARAMS
-from psycopg2.extras import RealDictCursor
-
+import database
+from camp_bot_models import DBForm
 
 
 router=Router()
 
-
 @router.message(Command('start'))
 async def start_handler(msg:Message):
-    await msg.answer('Здорово, ебола! запустил меня наконец.')
+    await msg.answer('Привет. Я буду работать с базой данных. Пока ограничимся записью в таблицу походов и просмотром записей. Предлагаю перейти к командам:\n/create_db\n/show_db.')
 
 
 
 
-conn= psycopg2.connect(**CONN_PARAMS)
+#хэндлеры для команды create_db:
+
+# Обработчик начальной команды для взаимодействий с таблицей походов
+@router.message(Command('create_db'))
+async def create_camp_handler(msg:Message, state:FSMContext):
+    await msg.answer('Введите дату начала похода (в формате гггг-мм-дд):')
+    await state.set_state(DBForm.wait_for_startdate)
 
 
-def get_campaign(conn, campaign_id):      
-    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute(
-            sql.SQL("SELECT * FROM campaign WHERE id = %s;"),
-            (campaign_id,))
-        return cursor.fetchone()
+# Обработчик для ввода startdate 
+@router.message(DBForm.wait_for_startdate)
+async def process_startdate(msg:Message, state:FSMContext):
+    await state.set_data({'startdate': msg.text})
+    await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
+    await state.set_state(DBForm.wait_for_enddate)
 
-@router.message()
-async def camp_handler(msg:Message):
-    response=get_campaign(conn=conn, campaign_id=int(msg))
-    await msg.answer(f'Нужная запись: {response}')
+# Обработчик для ввода enddate
+@router.message(DBForm.wait_for_enddate)
+async def process_enddate(msg:Message, state:FSMContext):
+    data = await state.get_data()
+    data['enddate'] = msg.text
+    await state.set_data(data)  # Сохраняем обновлённый словарь обратно в состояние
+    await msg.answer('Введите, какой прием пищи будет первым (завтрак-1, обед-2, ужин-3):')
+    await state.set_state(DBForm.wait_for_firstfood)
+
+
+
+# Обработчик для ввода firstfood
+@router.message(DBForm.wait_for_firstfood)
+async def process_firstfood(msg:Message, state:FSMContext):
+        # Получаем текущие данные
+    data = await state.get_data()
+    data['firstfood'] = msg.text
+    await state.set_data(data)
+    await msg.answer('Введите, какой прием пищи будет последним (завтрак-1, обед-2, ужин-3):')
+    await state.set_state(DBForm.wait_for_lastfood)
+
+
+# Обработчик для ввода lastfood
+@router.message(DBForm.wait_for_lastfood)
+async def process_lastfood(msg:Message, state:FSMContext):
+            # Получаем текущие данные
+    data = await state.get_data()
+    data['lastfood'] = msg.text
+    await state.set_data(data)
+    conn=database.get_connection()
+    database.create_campaign_for_bot(conn, data)
+    # Используем сохраненные данные для формирования ответа
+    startdate = data['startdate']
+    enddate = data['enddate']
+    firstfood = data['firstfood']
+    lastfood = data['lastfood']
+    await msg.answer(f'Спасибо, данные у меня\nдата начала: {startdate}\nдата окончания: {enddate}\nпервый прием: {firstfood}\nпоследний прием: {lastfood}\nданные для апихи:{data}')
+
+
+
+
+
+#Обработчики команды show_db для просмотра данных из бд:
+
+#первый хэндлер для начала работы
+st='wait for value'
+@router.message(Command('show_db'))
+async def get_camp_handler(msg:Message, state:FSMContext):
+    await msg.answer(f'Введите id записи:')
+    await state.set_state(st)
+
+#хэндлер для предоставления записи из БД
+@router.message(st)
+async def process_get_id(msg:Message, state:FSMContext):
+    response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
+    await state.reset_state()
+    await msg.answer(f'Ваша запись: {response}')
+    

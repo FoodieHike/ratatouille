@@ -12,6 +12,8 @@ from camp_bot_handlers import router
 
 logging.basicConfig(level=logging.INFO)
 logger=logging.getLogger(__name__)
+
+
 async def main():
     logger.info('бот запускается...')
     bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)

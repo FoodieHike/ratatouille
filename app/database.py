@@ -23,3 +23,14 @@ def create_campaign(conn, campaign):        #создание записи в ca
             (campaign.startdate, campaign.enddate, campaign.firstfood, campaign.lastfood))
         conn.commit()
         return cursor.fetchone()
+
+
+def create_campaign_for_bot(conn, campaign):        #создание записи в campaign
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(
+            sql.SQL(
+                "INSERT INTO campaign (startdate, enddate, firstfood, lastfood) VALUES (%s, %s, %s, %s) RETURNING *;"
+            ),
+            (campaign['startdate'], campaign['enddate'], campaign['firstfood'], campaign['lastfood']))
+        conn.commit()
+        return cursor.fetchone()

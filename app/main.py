@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 import psycopg2
-import datebase, models
+import database, models
 from config import CONN_PARAMS
 
 
@@ -8,9 +8,9 @@ app = FastAPI()
 
 @app.post("/campaign/", response_model=models.Campaign)
 def create_campaign(campaign: models.CampaignCreate):       #эндпоинт для наполнения таблицы campaign
-    conn = datebase.get_connection()
+    conn = database.get_connection()
     try:
-        new_campaign = datebase.create_campaign(conn, campaign)
+        new_campaign = database.create_campaign(conn, campaign)
         if new_campaign:
             return new_campaign
         raise HTTPException(status_code=404, detail="Ya hui znaet, gde ono")
