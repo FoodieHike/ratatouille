@@ -34,3 +34,12 @@ def create_campaign_for_bot(conn, campaign):        #создание запис
             (campaign['startdate'], campaign['enddate'], campaign['firstfood'], campaign['lastfood']))
         conn.commit()
         return cursor.fetchone()
+
+
+
+
+def get_campaign_bot_demo(conn):        #получение записи из таблицы campaign
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(
+            sql.SQL("SELECT * FROM campaign ORDER BY id DESC LIMIT 1;"))
+        return cursor.fetchone()

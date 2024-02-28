@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 import database
-from camp_bot_models import DBForm
+from camp_bot_models import DBGetContext, DBCreateContext
 
 
 router=Router()
@@ -22,40 +22,40 @@ async def start_handler(msg:Message):
 @router.message(Command('create_db'))
 async def create_camp_handler(msg:Message, state:FSMContext):
     await msg.answer('Введите дату начала похода (в формате гггг-мм-дд):')
-    await state.set_state(DBForm.wait_for_startdate)
+    await state.set_state(DBCreateContext.wait_for_startdate)
 
 
 # Обработчик для ввода startdate 
-@router.message(DBForm.wait_for_startdate)
+@router.message(DBCreateContext.wait_for_startdate)
 async def process_startdate(msg:Message, state:FSMContext):
     await state.set_data({'startdate': msg.text})
     await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
-    await state.set_state(DBForm.wait_for_enddate)
+    await state.set_state(DBCreateContext.wait_for_enddate)
 
 # Обработчик для ввода enddate
-@router.message(DBForm.wait_for_enddate)
+@router.message(DBCreateContext.wait_for_enddate)
 async def process_enddate(msg:Message, state:FSMContext):
     data = await state.get_data()
     data['enddate'] = msg.text
     await state.set_data(data)  # Сохраняем обновлённый словарь обратно в состояние
     await msg.answer('Введите, какой прием пищи будет первым (завтрак-1, обед-2, ужин-3):')
-    await state.set_state(DBForm.wait_for_firstfood)
+    await state.set_state(DBCreateContext.wait_for_firstfood)
 
 
 
 # Обработчик для ввода firstfood
-@router.message(DBForm.wait_for_firstfood)
+@router.message(DBCreateContext.wait_for_firstfood)
 async def process_firstfood(msg:Message, state:FSMContext):
         # Получаем текущие данные
     data = await state.get_data()
     data['firstfood'] = msg.text
     await state.set_data(data)
     await msg.answer('Введите, какой прием пищи будет последним (завтрак-1, обед-2, ужин-3):')
-    await state.set_state(DBForm.wait_for_lastfood)
+    await state.set_state(DBCreateContext.wait_for_lastfood)
 
 
 # Обработчик для ввода lastfood
-@router.message(DBForm.wait_for_lastfood)
+@router.message(DBCreateContext.wait_for_lastfood)
 async def process_lastfood(msg:Message, state:FSMContext):
             # Получаем текущие данные
     data = await state.get_data()
@@ -63,12 +63,9 @@ async def process_lastfood(msg:Message, state:FSMContext):
     await state.set_data(data)
     conn=database.get_connection()
     database.create_campaign_for_bot(conn, data)
-    # Используем сохраненные данные для формирования ответа
-    startdate = data['startdate']
-    enddate = data['enddate']
-    firstfood = data['firstfood']
-    lastfood = data['lastfood']
-    await msg.answer(f'Спасибо, данные у меня\nдата начала: {startdate}\nдата окончания: {enddate}\nпервый прием: {firstfood}\nпоследний прием: {lastfood}\nданные для апихи:{data}')
+    response=database.get_campaign_bot_demo(conn)
+    await msg.answer(f'Спасибо, данные у меня. ID Вашей записи - {response["id"]}')
+    await state.clear()
 
 
 
@@ -77,16 +74,16 @@ async def process_lastfood(msg:Message, state:FSMContext):
 #Обработчики команды show_db для просмотра данных из бд:
 
 #первый хэндлер для начала работы
-st='wait for value'
 @router.message(Command('show_db'))
 async def get_camp_handler(msg:Message, state:FSMContext):
     await msg.answer(f'Введите id записи:')
-    await state.set_state(st)
+    await state.set_state(DBGetContext.get_id)
 
 #хэндлер для предоставления записи из БД
-@router.message(st)
+@router.message(DBGetContext.get_id)
 async def process_get_id(msg:Message, state:FSMContext):
     response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
-    await state.reset_state()
-    await msg.answer(f'Ваша запись: {response}')
-    
+    await msg.answer(f"Ваша запись: \nдата начала-{response['startdate']}\nдата окончания-{response['enddate']}\nпервый прием пищи-{response['firstfood']}\nконечный прием пищи-{response['lastfood']}")
+    await state.clear()
+
+

@@ -6,6 +6,8 @@ CREATE TABLE Campaign (
   Lastfood VARCHAR(255)
 );
 
+INSERT INTO Campaign (StartDate, Enddate, Firstfood, Lastfood) VALUES ('2024-12-01', '2024-12-31', '1', '2');
+
 CREATE TABLE People (
   ID INT PRIMARY KEY,
   campaign_ID INT,
