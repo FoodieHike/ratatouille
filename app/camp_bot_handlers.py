@@ -2,10 +2,16 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from pydantic import ValidationError
+from datetime import datetime
 
 import database
-from camp_bot_models import DBGetContext, DBCreateContext
+from camp_bot_models import DBGetContext, DBCreateContext, DateValidation, DateLimitError
 
+
+today=datetime.now()
+today=today.strftime('%Y-%m-%d')
+datelimit='2100-01-01'
 
 router=Router()
 
@@ -28,18 +34,47 @@ async def create_camp_handler(msg:Message, state:FSMContext):
 # Обработчик для ввода startdate 
 @router.message(DBCreateContext.wait_for_startdate)
 async def process_startdate(msg:Message, state:FSMContext):
-    await state.set_data({'startdate': msg.text})
-    await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
-    await state.set_state(DBCreateContext.wait_for_enddate)
+    try:
+        valid_data=DateValidation(date=msg.text)
+        if msg.text<today:
+            raise ValueError
+        elif msg.text>datelimit:
+            raise DateLimitError
+        else:
+            await state.set_data({'startdate': msg.text})
+            await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
+            await state.set_state(DBCreateContext.wait_for_enddate)
+    except ValidationError:
+        await msg.answer(f'Ошибка корректности даты\nВведите дату в корректном формате гггг-мм-дд!')
+    except ValueError:
+        await msg.answer('Введенная дата должна быть не ранее сегодняшнего дня!\nВведите корректную дату:')
+    except DateLimitError:
+        await msg.answer('Вы врядли доживете до начала похода\nПопробуйте более близкую дату:')
 
 # Обработчик для ввода enddate
 @router.message(DBCreateContext.wait_for_enddate)
 async def process_enddate(msg:Message, state:FSMContext):
-    data = await state.get_data()
-    data['enddate'] = msg.text
-    await state.set_data(data)  # Сохраняем обновлённый словарь обратно в состояние
-    await msg.answer('Введите, какой прием пищи будет первым (завтрак-1, обед-2, ужин-3):')
-    await state.set_state(DBCreateContext.wait_for_firstfood)
+    try:
+        valid_data=DateValidation(date=msg.text)
+        startdate=await state.get_data()
+        startdate=startdate['startdate']
+        if msg.text<startdate:
+            raise ValueError
+        elif msg.text>datelimit:
+            raise DateLimitError
+        else:
+            data = await state.get_data()
+            data['enddate'] = msg.text
+            await state.set_data(data)  # Сохраняем обновлённый словарь обратно в состояние
+            await msg.answer('Введите, какой прием пищи будет первым (завтрак-1, обед-2, ужин-3):')
+            await state.set_state(DBCreateContext.wait_for_firstfood)
+    except ValidationError:
+        await msg.answer(f'Ошибка корректности даты.\nВведите дату в корректном формате гггг-мм-дд!')
+    except ValueError:
+        await msg.answer('Введенная дата должна быть позже введенной даты начала похода!\nВведите корректную дату:')
+    except DateLimitError:
+        await msg.answer('Вы врядли доживете до конца похода\nПопробуйте более близкую дату:')
+    
 
 
 
