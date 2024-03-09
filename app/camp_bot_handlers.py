@@ -136,8 +136,14 @@ async def get_camp_handler(msg:Message, state:FSMContext):
 #хэндлер для предоставления записи из БД
 @router.message(DBGetContext.get_id)
 async def process_get_id(msg:Message, state:FSMContext):
-    response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
-    await msg.answer(f"Ваша запись: \nдата начала-{response['startdate']}\nдата окончания-{response['enddate']}\nпервый прием пищи-{response['firstfood']}\nконечный прием пищи-{response['lastfood']}")
-    await state.clear()
+    try:
+        response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
+        await msg.answer(f"Ваша запись: \nдата начала-{response['startdate']}\nдата окончания-{response['enddate']}\nпервый прием пищи-{response['firstfood']}\nконечный прием пищи-{response['lastfood']}")
+    except ValueError:
+        await msg.answer(f'Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
+    except TypeError:
+        await msg.answer('Такого id нет в таблице, введите, пожалуйста существующий id:')
+    else:
+        await state.clear()
 
 
