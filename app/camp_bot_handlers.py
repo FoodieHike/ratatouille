@@ -1,5 +1,5 @@
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from pydantic import ValidationError
@@ -18,15 +18,32 @@ router=Router()
 
 @router.message(Command('start'))
 async def start_handler(msg:Message):
-    await msg.answer('Привет. Я буду работать с базой данных. Пока ограничимся записью в таблицу походов и просмотром записей. Предлагаю перейти к командам:\n/create_db\n/show_db.')
+    btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
+    btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
+    row=[btn_create, btn_show]
+    rows=[row]
+    mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
+    await msg.answer(text='Привет. Я буду работать с базой данных. Пока ограничимся записью в таблицу походов и просмотром записей. Предлагаю перейти к командам:',
+                     reply_markup=mrkp)
 
 
 
 
 #хэндлеры для команды create_db:
+    
+
+#альтернативный обработчик под встроенную кнопку:
+@router.callback_query(lambda cb:cb.data=='create')
+async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
+    await qry.message.answer('Введите дату начала похода (в формате гггг-мм-дд):')
+    await state.set_state(DBCreateContext.wait_for_startdate)
+
+
+
+
 
 # Обработчик начальной команды для взаимодействий с таблицей походов
-@router.message(Command('create_db'))
+@router.message(Command('create'))
 async def create_camp_handler(msg:Message, state:FSMContext):
     await msg.answer('Введите дату начала похода (в формате гггг-мм-дд):')
     await state.set_state(DBCreateContext.wait_for_startdate)
@@ -48,13 +65,15 @@ async def process_startdate(msg:Message, state:FSMContext):
             else:
                 await state.set_data({'startdate': msg.text})
                 await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
-                await state.set_state(DBCreateContext.wait_for_enddate)
         except ValidationError:
             await msg.answer(f'Ошибка корректности даты\nВведите дату в корректном формате гггг-мм-дд!')
         except ValueError:
             await msg.answer('Введенная дата должна быть не ранее сегодняшнего дня!\nВведите корректную дату:')
         except DateLimitError:
             await msg.answer('Вы врядли доживете до начала похода\nПопробуйте более близкую дату:')
+        else:
+            await state.set_state(DBCreateContext.wait_for_enddate)
+
 
 # Обработчик для ввода enddate
 @router.message(DBCreateContext.wait_for_enddate)
@@ -126,9 +145,18 @@ async def process_lastfood(msg:Message, state:FSMContext):
 
 
 #Обработчики команды show_db для просмотра данных из бд:
+        
+
+#альтернативный обработчик под встроенную кнопку:
+@router.callback_query(lambda cb:cb.data=='show')
+async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
+    await qry.message.answer(f'Введите id записи:')
+    await state.set_state(DBGetContext.get_id)
+
+
 
 #первый хэндлер для начала работы
-@router.message(Command('show_db'))
+@router.message(Command('show'))
 async def get_camp_handler(msg:Message, state:FSMContext):
     await msg.answer(f'Введите id записи:')
     await state.set_state(DBGetContext.get_id)

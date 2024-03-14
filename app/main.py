@@ -7,7 +7,7 @@ from config import CONN_PARAMS
 app = FastAPI()
 
 @app.post("/campaign/", response_model=models.Campaign)
-def create_campaign(campaign: models.CampaignCreate):       #эндпоинт для наполнения таблицы campaign
+async def create_campaign(campaign: models.CampaignCreate):       #эндпоинт для наполнения таблицы campaign
     conn = database.get_connection()
     try:
         new_campaign = database.create_campaign(conn, campaign)
