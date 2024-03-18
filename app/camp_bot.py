@@ -6,8 +6,7 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 
-from config import BOT_API
-from camp_bot_handlers import router
+from camp_bot_handlers import router, bot
 
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +15,6 @@ logger=logging.getLogger(__name__)
 
 async def main():
     logger.info('бот запускается...')
-    bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)
     dp=Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     await bot.delete_webhook(drop_pending_updates=True)

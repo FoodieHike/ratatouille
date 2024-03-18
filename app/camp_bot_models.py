@@ -16,6 +16,8 @@ class DBCreateContext(StatesGroup):
 class DBGetContext(StatesGroup):
     get_id=State()
 
+class Menu(StatesGroup):
+    get_to_menu=State()
 
 
 #Модели для валидации данных:
@@ -24,5 +26,3 @@ class DateValidation(BaseModel):
 
 
 #Для ошибок и исключений:
-class DateLimitError(Exception):
-    pass
