@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from pydantic import ValidationError
 from datetime import datetime
 
+from utils import calendar, months_creator, callback_date_converter
 import models
 import database
 from camp_bot_models import DBGetContext, DBCreateContext, DateValidation, DateLimitError
@@ -29,14 +30,16 @@ async def start_handler(msg:Message):
 
 
 
-#хэндлеры для команды create_db:
+#хэндлеры для команды create:
     
 
 #альтернативный обработчик под встроенную кнопку:
 @router.callback_query(lambda cb:cb.data=='create')
 async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
-    await qry.message.answer('Введите дату начала похода (в формате гггг-мм-дд):')
-    await state.set_state(DBCreateContext.wait_for_startdate)
+    await qry.answer('Будет создана новая запись')
+    mrkp=months_creator(4)
+    await qry.message.answer('Выберите месяц для похода:', reply_markup=mrkp)
+    await state.set_state(DBCreateContext.wait_for_startdate_one)
 
 
 
@@ -45,99 +48,134 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 # Обработчик начальной команды для взаимодействий с таблицей походов
 @router.message(Command('create'))
 async def create_camp_handler(msg:Message, state:FSMContext):
-    await msg.answer('Введите дату начала похода (в формате гггг-мм-дд):')
-    await state.set_state(DBCreateContext.wait_for_startdate)
+    await msg.answer('Будет создана новая запись')
+    mrkp=months_creator(4)
+    await msg.answer('Выберите месяц для похода:', reply_markup=mrkp)
+    await state.set_state(DBCreateContext.wait_for_startdate_one)
 
 
-# Обработчик для ввода startdate 
-@router.message(DBCreateContext.wait_for_startdate)
-async def process_startdate(msg:Message, state:FSMContext):
-    if msg.text.startswith('/'):
-                await state.clear()
-                await msg.answer('Повторите команду, пожалуйста')
+# Обработчик для ввода startdate  первый
+@router.callback_query(DBCreateContext.wait_for_startdate_one)
+async def process_startdate(qry:CallbackQuery, state:FSMContext):    
+    try:
+        month=int(qry.data)
+        year=datetime.now()
+        year=year.strftime('%Y')
+        markup=calendar(year, month)
+        await qry.message.answer(text='Выберите дату:', reply_markup=markup)
+    except Exception as e:
+        await qry.message.answer(f'Произошла чудовищная ошибка!\n{e}')
     else:
-        try:
-            valid_data=DateValidation(date=msg.text)
-            if msg.text<today:
-                raise ValueError
-            elif msg.text>datelimit:
-                raise DateLimitError
-            else:
-                await state.set_data({'startdate': msg.text})
-                await msg.answer('Введите дату окончания похода (в формате гггг-мм-дд):')
-        except ValidationError:
-            await msg.answer(f'Ошибка корректности даты\nВведите дату в корректном формате гггг-мм-дд!')
-        except ValueError:
-            await msg.answer('Введенная дата должна быть не ранее сегодняшнего дня!\nВведите корректную дату:')
-        except DateLimitError:
-            await msg.answer('Вы врядли доживете до начала похода\nПопробуйте более близкую дату:')
+        await state.set_state(DBCreateContext.wait_for_startdate_two)
+
+
+# Обработчик для ввода startdate второй
+@router.callback_query(DBCreateContext.wait_for_startdate_two)
+async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
+    try:
+        #валидируем дату и закидываем в хранилище данных состояний
+        if qry.data<today:
+            raise ValueError
         else:
-            await state.set_state(DBCreateContext.wait_for_enddate)
+            await qry.message.answer(f'Выбранная дата:\n{qry.data}')
+            valid_data=DateValidation(date=qry.data)
+            await state.set_data({'startdate': qry.data})
 
+        #открываем новый календарь для следующей даты
+            mrkp=months_creator(4)
+            await qry.message.answer('Выберите месяц окончания похода:', reply_markup=mrkp)
 
-# Обработчик для ввода enddate
-@router.message(DBCreateContext.wait_for_enddate)
-async def process_enddate(msg:Message, state:FSMContext):
-    if msg.text.startswith('/'):
-        await state.clear()
-        await msg.answer('Повторите команду, пожалуйста')
+    #Обработчики ошибок
+    except ValueError:
+        mrkp=months_creator(4)
+        await qry.message.answer('Введенная дата должна быть не ранее сегодняшнего дня!\nВведите корректную дату:', reply_markup=mrkp)
+        await state.set_state(DBCreateContext.wait_for_startdate_one)
     else:
-        try:
-            valid_data=DateValidation(date=msg.text)
-            startdate=await state.get_data()
-            startdate=startdate['startdate']
-            if msg.text<startdate:
-                raise ValueError
-            elif msg.text>datelimit:
-                raise DateLimitError
-            else:
-                data = await state.get_data()
-                data['enddate'] = msg.text
-                await state.set_data(data)  # Сохраняем обновлённый словарь обратно в состояние
-                await msg.answer('Введите, какой прием пищи будет первым (ответ введите цифрами 1, 2 или 3, где: завтрак-1, обед-2, ужин-3):')
-                await state.set_state(DBCreateContext.wait_for_firstfood)
-        except ValidationError:
-            await msg.answer(f'Ошибка корректности даты.\nВведите дату в корректном формате гггг-мм-дд!')
-        except ValueError:
-            await msg.answer('Введенная дата должна быть позже введенной даты начала похода!\nВведите корректную дату:')
-        except DateLimitError:
-            await msg.answer('Вы врядли доживете до конца похода\nПопробуйте более близкую дату:')
-    
+        await state.set_state(DBCreateContext.wait_for_enddate_one)
 
+#обработчик для enddate первый    
+@router.callback_query(DBCreateContext.wait_for_enddate_one)
+async def process_enddate(qry:CallbackQuery, state:FSMContext):
+    try:
+        month=int(qry.data)
+        year=datetime.now()
+        year=year.strftime('%Y')
+        markup=calendar(year, month)
+        await qry.message.answer(text='Выберите дату окончания похода:', reply_markup=markup)
+    except Exception as e:
+        await qry.message.answer(f'Произошла чудовищная ошибка!\n{e}')
+    else:
+        await state.set_state(DBCreateContext.wait_for_enddate_two)
+
+
+#обработчик для enddate второй
+@router.callback_query(DBCreateContext.wait_for_enddate_two)
+async def process_enddate_second(qry:CallbackQuery, state:FSMContext):
+    try:
+        data = await state.get_data()
+        if data['startdate'] >qry.data:
+            raise ValueError
+        else:
+            await qry.message.answer(f'Выбранная дата:\n{qry.data}')
+            valid_data=DateValidation(date=qry.data)
+            data = await state.get_data()
+            data['enddate'] = qry.data
+            await state.set_data(data)
+    except ValueError:
+        mrkp=months_creator(4)
+        await qry.message.answer('Введенная дата должна быть позже введенной даты начала похода!\nВведите корректную дату:', reply_markup=mrkp)
+        await state.set_state(DBCreateContext.wait_for_enddate_one)
+    else:
+        row=[InlineKeyboardButton(text='Завтрак', callback_data='1'), InlineKeyboardButton(text='Обед', callback_data='2'), InlineKeyboardButton(text='Ужин', callback_data='3')]
+        rows=[row]
+        mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
+        await qry.message.answer('Введите первый прием пищи:', reply_markup=mrkp)
+        await state.set_state(DBCreateContext.wait_for_firstfood)
 
 
 # Обработчик для ввода firstfood
-@router.message(DBCreateContext.wait_for_firstfood)
-async def process_firstfood(msg:Message, state:FSMContext):
+@router.callback_query(DBCreateContext.wait_for_firstfood)
+async def process_firstfood(qry:CallbackQuery, state:FSMContext):
     try:
-        models.FeedType(msg.text)
+        models.FeedType(qry.data)
     except ValueError:
-        await msg.answer('Неверный формат ввода. Введите, пожалуйста, один из предложенных вариантов:\n1 - если хотите указать завтрак;\n2 - указать обед;\n3 - ужин')
+        await qry.message.answer('Неверный формат ввода. Введите, пожалуйста, один из предложенных вариантов:\n1 - если хотите указать завтрак;\n2 - указать обед;\n3 - ужин')
     else:
             # Получаем текущие данные
         data = await state.get_data()
-        data['firstfood'] = msg.text
+        data['firstfood'] = qry.data
         await state.set_data(data)
-        await msg.answer('Введите, какой прием пищи будет последним (ответ введите цифрами 1, 2 или 3, где: завтрак-1, обед-2, ужин-3):')
+        row=[InlineKeyboardButton(text='Завтрак', callback_data='1'), InlineKeyboardButton(text='Обед', callback_data='2'), InlineKeyboardButton(text='Ужин', callback_data='3')]
+        rows=[row]
+        mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
+        await qry.message.answer('Введите последний прием пищи:', reply_markup=mrkp)
         await state.set_state(DBCreateContext.wait_for_lastfood)
 
 
 # Обработчик для ввода lastfood
-@router.message(DBCreateContext.wait_for_lastfood)
-async def process_lastfood(msg:Message, state:FSMContext):
+@router.callback_query(DBCreateContext.wait_for_lastfood)
+async def process_lastfood(qry:CallbackQuery, state:FSMContext):
     try:
-        models.FeedType(msg.text)
+        models.FeedType(qry.data)
     except ValueError:
-        await msg.answer('Неверный формат ввода. Введите, пожалуйста, один из предложенных вариантов:\n1 - если хотите указать завтрак;\n2 - указать обед;\n3 - ужин')
+        await qry.message.answer('Неверный формат ввода. Введите, пожалуйста, один из предложенных вариантов:\n1 - если хотите указать завтрак;\n2 - указать обед;\n3 - ужин')
     else:
                 # Получаем текущие данные
         data = await state.get_data()
-        data['lastfood'] = msg.text
+        data['lastfood'] = qry.data
         await state.set_data(data)
         conn=database.get_connection()
         database.create_campaign_for_bot(conn, data)
         response=database.get_campaign_bot_demo(conn)
-        await msg.answer(f'Спасибо, данные у меня. ID Вашей записи - {response["id"]}')
+        
+        #определяем длину похода
+        lenght=callback_date_converter(data['enddate'])-callback_date_converter(data['startdate'])
+        if str(lenght.days).endswith('1'):
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} день.\nID Вашей записи - {response["id"]}')
+        elif str(lenght.days).endswith('2') or str(lenght.days).endswith('3') or str(lenght.days).endswith('4'):
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} дня.\nID Вашей записи - {response["id"]}')
+        else:
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} дней.\nID Вашей записи - {response["id"]}')
         await state.clear()
 
 
