@@ -36,7 +36,8 @@ bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)
 #стартовый хэндлер:
 
 @router.message(Command('start'))
-async def start_handler(msg:Message):
+async def start_handler(msg:Message, state:FSMContext):
+    await state.clear()
     chat_id=msg.chat.id
     btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
     btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
@@ -62,7 +63,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')
+            await qry.message.answer(f'We got an exception:\n{e}')
     await qry.answer('Будет создана новая запись')
     mrkp=months_creator(4)
     answer_msg = await qry.message.answer('Выберите месяц для похода:', reply_markup=mrkp)
@@ -77,6 +78,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 # Обработчик начальной команды для взаимодействий с таблицей походов
 @router.message(Command('create'))
 async def create_camp_handler(msg:Message, state:FSMContext):
+    await state.clear()
     chat_id=msg.chat.id
     await msg.answer('Будет создана новая запись')
     mrkp=months_creator(4)
@@ -93,7 +95,7 @@ async def process_startdate(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')    
+            await qry.message.answer(f'We got an exception:\n{e}')    
     try:
         month=int(qry.data)
         year=datetime.now()
@@ -115,13 +117,13 @@ async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}') 
+            await qry.message.answer(f'We got an exception:\n{e}') 
     try:
         #валидируем дату и закидываем в хранилище данных состояний
         if qry.data<today:
             raise ValueError
         else:
-            await qry.message.answer(f'Выбранная дата:\n{qry.data}')
+            await qry.message.answer(f'Дата начала похода:\n{qry.data}')
             valid_data=DateValidation(date=qry.data)
             await state.set_data({'startdate': qry.data})
 
@@ -137,7 +139,7 @@ async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
             except Exception as e:
-                qry.message.answer(f'We got an exception:\n{e}') 
+                await qry.message.answer(f'We got an exception:\n{e}') 
         mrkp=months_creator(4)
         answer_msg_second=await qry.message.answer('Введенная дата должна быть не ранее сегодняшнего дня!\nВведите корректную дату:', reply_markup=mrkp)
         last_bot_msg[chat_id]=answer_msg_second.message_id
@@ -153,7 +155,7 @@ async def process_enddate(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')
+            await qry.message.answer(f'We got an exception:\n{e}')
     try:
         month=int(qry.data)
         year=datetime.now()
@@ -175,13 +177,13 @@ async def process_enddate_second(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')
+            await qry.message.answer(f'We got an exception:\n{e}')
     try:
         data = await state.get_data()
         if data['startdate'] >qry.data:
             raise ValueError
         else:
-            await qry.message.answer(f'Выбранная дата:\n{qry.data}')
+            await qry.message.answer(f'Дата окончания:\n{qry.data}')
             valid_data=DateValidation(date=qry.data)
             data = await state.get_data()
             data['enddate'] = qry.data
@@ -208,7 +210,7 @@ async def process_firstfood(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')
+            await qry.message.answer(f'We got an exception:\n{e}')
     try:
         models.FeedType(qry.data)
     except Exception as e:
@@ -234,7 +236,7 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
         except Exception as e:
-            qry.message.answer(f'We got an exception:\n{e}')
+            await qry.message.answer(f'We got an exception:\n{e}')
     try:
         models.FeedType(qry.data)
     except Exception as e:
@@ -270,7 +272,9 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
 #альтернативный обработчик под встроенную кнопку:
 @router.callback_query(lambda cb:cb.data=='show')
 async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
-    await qry.message.answer(f'Введите id записи:')
+    chat_id=qry.message.chat.id
+    answer_msg=await qry.message.answer(f'Введите id записи:')
+    last_bot_msg[chat_id]=answer_msg.message_id
     await state.set_state(DBGetContext.get_id)
 
 
@@ -278,13 +282,22 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 #первый хэндлер для начала работы
 @router.message(Command('show'))
 async def get_camp_handler(msg:Message, state:FSMContext):
-    await msg.answer(f'Введите id записи:')
+    await state.clear()
+    chat_id=msg.chat.id
+    answer_msg=await msg.answer(f'Введите id записи:')
+    last_bot_msg[chat_id]=answer_msg.message_id
     await state.set_state(DBGetContext.get_id)
 
 #хэндлер для предоставления записи из БД
 @router.message(DBGetContext.get_id)
 async def process_get_id(msg:Message, state:FSMContext):
     try:
+        if last_bot_msg:
+            chat_id=msg.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            except Exception as e:
+                await msg.answer(f'We got an exception:\n{e}')
         response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
     except ValueError:
         await msg.answer(f'Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
@@ -293,7 +306,23 @@ async def process_get_id(msg:Message, state:FSMContext):
     else:
         btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
         mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-        await msg.answer(f"Ваша запись: \nдата начала-{response['startdate']}\nдата окончания-{response['enddate']}\nпервый прием пищи-{response['firstfood']}\nконечный прием пищи-{response['lastfood']}",
+        firstfood=response['firstfood']
+        lastfood=response['lastfood']
+        if firstfood=='1':
+            res='завтрак'
+        elif firstfood=='2':
+            res='обед'
+        else:
+            res='ужин' 
+
+        if lastfood=='1':
+            res_s='завтрак'
+        elif lastfood=='2':
+            res_s='обед'
+        else:
+            res_s='ужин' 
+        
+        await msg.answer(f"Ваша запись: \nДата начала-{response['startdate']}\nДата окончания-{response['enddate']}\nПервый прием пищи - {res}\nКонечный прием пищи - {res_s}",
                          reply_markup=mrkp)
         await state.clear()
 
@@ -312,4 +341,12 @@ async def menu_handler(qry:CallbackQuery):
     menu=await qry.message.answer(text='Что будем делать дальше?', reply_markup=mrkp)
     last_bot_msg[chat_id]=menu.message_id
     
+
+#хэндлер-заглушка для help:
+
+
+@router.message(Command('help'))
+async def help_handler(msg:Message, state:FSMContext):
+    state.clear()
+    await msg.answer('Здесь пока ничего нет, опция в разработке...')
     
