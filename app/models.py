@@ -19,3 +19,8 @@ class CampaignCreate(CampaignBase):     #модель для валиации в
 
 class Campaign(CampaignBase):       #модель для доставания записей из campaign
     id: int
+
+
+class UserReg(BaseModel):
+    name:str
+    password:str

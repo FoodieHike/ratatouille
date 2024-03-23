@@ -3,10 +3,20 @@ CREATE TABLE Campaign (
   Startdate DATE,
   Enddate DATE,
   Firstfood VARCHAR(255),
-  Lastfood VARCHAR(255)
+  Lastfood VARCHAR(255),
+  User_tg_id INT
 );
 
 INSERT INTO Campaign (StartDate, Enddate, Firstfood, Lastfood) VALUES ('2024-12-01', '2024-12-31', '1', '2');
+
+CREATE TABLE Users (
+  ID SERIAL PRIMARY KEY,
+  name VARCHAR(255),
+  password VARCHAR(255),
+  tg_id INT
+);
+
+INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'John_Doe_1488', '001');
 
 CREATE TABLE People (
   ID INT PRIMARY KEY,

@@ -6,9 +6,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 
-#функция для построения клавиатуры с календарем:
+#Функции для календаря:
     
-def calendar(year, month):
+def calendar(year, month):      #функция для построения клавиатуры с календарем:
     year=int(year)
     month=int(month)
     row=[]
@@ -50,9 +50,9 @@ def calendar(year, month):
 
 
 
-#создает клавиатуру с месяцами:
 
-def months_creator(in_row):
+
+def months_creator(in_row):     #создает клавиатуру с месяцами
     months=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь']
     row=[InlineKeyboardButton(text=day, callback_data=str(x)) for day, x in zip(months, range(1, len(months)+1))]
     rows=[]
@@ -66,8 +66,18 @@ def months_creator(in_row):
     return mrkp
 
 
-#конвертирует строку с датой в дату
 
-def callback_date_converter(cb_date):
+
+
+def callback_date_converter(cb_date):       #конвертирует строку с датой в дату
     operand=date(int(cb_date[0:4]), int(cb_date[5:7]), int(cb_date[8:]))
     return operand
+
+
+#_________________________________________________________________________________________
+#Другие утилиты
+
+def uid_creator(checker, conn, uid):        #вытаскивает tg_id из таблицы users (пока функциолнал не нужный, но может быть нужен потом, хз)
+    table_row=checker(conn, uid).items()
+    table_row=[list(x) for x in table_row]
+    return table_row[3][1]

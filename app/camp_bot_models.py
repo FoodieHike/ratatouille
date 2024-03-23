@@ -19,6 +19,11 @@ class DBGetContext(StatesGroup):
 class Menu(StatesGroup):
     get_to_menu=State()
 
+class UserRegistration(StatesGroup):
+    register=State()
+
+class ShowStates(StatesGroup):      #для записи id
+    putID=State()
 
 #Модели для валидации данных:
 class DateValidation(BaseModel):
