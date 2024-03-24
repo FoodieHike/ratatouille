@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from pydantic import ValidationError
 from datetime import datetime
 from aiogram.enums.parse_mode import ParseMode
+from psycopg2.errors import InvalidTextRepresentation
 
 from utils import calendar, months_creator, callback_date_converter
 import models
@@ -62,6 +63,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
@@ -126,6 +128,7 @@ async def process_startdate(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')    
     try:
@@ -170,6 +173,7 @@ async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
             chat_id=qry.message.chat.id
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
             except Exception as e:
                 await qry.message.answer(f'We got an exception:\n{e}') 
         mrkp=months_creator(4)
@@ -186,6 +190,7 @@ async def process_enddate(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
@@ -208,6 +213,7 @@ async def process_enddate_second(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
@@ -241,6 +247,7 @@ async def process_firstfood(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
@@ -267,6 +274,7 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         chat_id=qry.message.chat.id
         try:
             await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+            del last_bot_msg[chat_id]
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
@@ -314,7 +322,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 
 
 
-#первый хэндлер для начала работы
+#первый хэндлер для начала работы:
 @router.message(Command('show'))
 async def get_camp_handler(msg:Message, state:FSMContext):
     row=[InlineKeyboardButton(text='Показать все записи', callback_data='all'),  InlineKeyboardButton(text='Показать конкретную', callback_data='current')]
@@ -325,7 +333,7 @@ async def get_camp_handler(msg:Message, state:FSMContext):
     last_bot_msg[chat_id]=answer_msg.message_id
 
 
-
+#хэндлер для выведения всех записей:
 @router.callback_query(lambda cb:cb.data=='all')
 async def show_all_handler(qry:CallbackQuery):
     try:
@@ -333,41 +341,47 @@ async def show_all_handler(qry:CallbackQuery):
             chat_id=qry.message.chat.id
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
             except Exception as e:
                 await qry.message.answer(f'We got an exception:\n{e}')
         response=database.get_campaign_all(conn=database.get_connection(), uid=str(qry.from_user.id))
-        records=[]
-        count=0
-        for row in response:
-            firstfood=row['firstfood']
-            lastfood=row['lastfood']
-            if firstfood=='1':
-                res='завтрак'
-            elif firstfood=='2':
-                res='обед'
-            else:
-                res='ужин' 
+        if response:
+            records=[]
+            count=0
+            for row in response:
+                firstfood=row['firstfood']
+                lastfood=row['lastfood']
+                if firstfood=='1':
+                    res='завтрак'
+                elif firstfood=='2':
+                    res='обед'
+                else:
+                    res='ужин' 
 
-            if lastfood=='1':
-                res_s='завтрак'
-            elif lastfood=='2':
-                res_s='обед'
-            else:
-                res_s='ужин' 
-            count+=1
-            records.append('запись '+ str(count)+': id записи - '+ str(row['id'])+ '; дата начала похода - '+ str(row['startdate'])+ '; дата окончания похода - '+ str(row['enddate'])+ ';\n'+'первый прием пищи - '+ res+'; последний прием пищи - '+ res_s +'\n')
-        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
-        mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-        await qry.message.answer(f'ваши данные:\n'+'\n'.join(records), reply_markup=mrkp)
+                if lastfood=='1':
+                    res_s='завтрак'
+                elif lastfood=='2':
+                    res_s='обед'
+                else:
+                    res_s='ужин' 
+                count+=1
+                records.append('запись '+ str(count)+': id записи - '+ str(row['id'])+ '; дата начала похода - '+ str(row['startdate'])+ '; дата окончания похода - '+ str(row['enddate'])+ ';\n'+'первый прием пищи - '+ res+'; последний прием пищи - '+ res_s +'\n')
+            btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
+            mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
+            await qry.message.answer(f'ваши данные:\n'+'\n'.join(records), reply_markup=mrkp)
+        else:
+            btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
+            mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
+            await qry.message.answer('У Вас пока нет записей, но можете их создать:', reply_markup=mrkp)
     except Exception as e:
         await qry.message.answer(f'Exception!!!\n{e.args}')
 
         
 
 
-
+#хэндлер для выведения конкретной записи:
 @router.callback_query(lambda cb:cb.data=='current')
-async def current_handler(qry:CallbackQuery, state:FSMContext):
+async def show_current_handler(qry:CallbackQuery, state:FSMContext):
     await qry.message.answer('Введите ID записи:')
     await state.set_state(ShowStates.putID)
 
@@ -379,9 +393,10 @@ async def show_current_process(msg:Message, state:FSMContext):
             chat_id=msg.chat.id
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
             except Exception as e:
                 await msg.answer(f'We got an exception:\n{e}')
-        response=database.show_current(conn=database.get_connection(), uid=msg.from_user.id, record_id=msg.text)
+        response=database.get_campaign_current(conn=database.get_connection(), uid=msg.from_user.id, record_id=msg.text)
         firstfood=response['firstfood']
         lastfood=response['lastfood']
         if firstfood=='1':
@@ -404,7 +419,9 @@ async def show_current_process(msg:Message, state:FSMContext):
     except TypeError:
         await msg.answer('Такой в ваших записях нет. Попробуйте другой id')
     except ValueError:
-        await msg.answer(f'Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
+        await msg.answer('Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
+    except InvalidTextRepresentation:
+        await msg.answer('Неправильная форма записи!\nВведите, пожалуйста, корректный ID (натуральное число).')
     else:
         await state.clear()
 
@@ -418,6 +435,7 @@ async def process_get_id(msg:Message, state:FSMContext):
             chat_id=msg.chat.id
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
             except Exception as e:
                 await msg.answer(f'We got an exception:\n{e}')
         response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
