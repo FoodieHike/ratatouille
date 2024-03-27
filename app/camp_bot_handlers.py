@@ -9,7 +9,7 @@ from psycopg2.errors import InvalidTextRepresentation
 
 from utils import calendar, months_creator, callback_date_converter
 import models
-import database
+from database import UsersTable, Database,BotCampaignTable
 from camp_bot_models import DBGetContext, DBCreateContext, DateValidation, Menu, UserRegistration, ShowStates
 from config import BOT_API
 
@@ -39,6 +39,13 @@ bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)
 @router.message(Command('start'))
 async def start_handler(msg:Message, state:FSMContext):
     await state.clear()
+    if last_bot_msg:
+            chat_id=msg.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await msg.answer(f'We got an exception:\n{e}')
     chat_id=msg.chat.id
     btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
     btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
@@ -67,7 +74,8 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
         except Exception as e:
             await qry.message.answer(f'We got an exception:\n{e}')
     try:
-        user=database.table_users_check(conn=database.get_connection(), uid=qry.from_user.id)
+        user=UsersTable(Database.get_connection())
+        user=user.table_users_check(uid=qry.from_user.id)
         if user:
             chat_id=qry.message.chat.id
             mrkp=months_creator(4)
@@ -89,8 +97,16 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 @router.message(Command('create'))
 async def create_camp_handler(msg:Message, state:FSMContext):
     await state.clear()
+    if last_bot_msg:
+            chat_id=msg.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await msg.answer(f'We got an exception:\n{e}')
     try:
-        user=database.table_users_check(conn=database.get_connection(), uid=msg.from_user.id)
+        user=UsersTable(Database.get_connection())
+        user=user.table_users_check(uid=msg.from_user.id)
         if user:
             chat_id=msg.chat.id
             mrkp=months_creator(4)
@@ -111,7 +127,8 @@ async def create_camp_handler(msg:Message, state:FSMContext):
 async def registration_handler(msg:Message, state:FSMContext):
     data={'name':msg.text}
     passgen=''.join([str(msg.from_user.full_name),'_', str(msg.from_user.id)[-4:]])     #заглушка для пароля (пока хз, зачем он)
-    database.create_user_bot_auto(conn=database.get_connection(), password=passgen, tgid=msg.from_user.id, user=data)
+    creation=UsersTable(Database.get_connection())
+    creation.create_user_bot_auto(password=passgen, tgid=msg.from_user.id, user=data)
     await msg.answer(f'отлично, {msg.text}, теперь можно приступить к записи похода')
     chat_id=msg.chat.id
     mrkp=months_creator(4)
@@ -286,9 +303,9 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         data = await state.get_data()
         data['lastfood'] = qry.data
         await state.set_data(data)
-        conn=database.get_connection()
-        database.create_campaign_for_bot(conn=conn, campaign=data,u_id=qry.from_user.id)
-        response=database.get_campaign_bot_demo(conn)
+        creation=BotCampaignTable(Database.get_connection())
+        creation.create_campaign(campaign=data,u_id=qry.from_user.id)
+        response=creation.get_campaign_bot_demo()
         
         #определяем длину похода
         lenght=callback_date_converter(data['enddate'])-callback_date_converter(data['startdate'])
@@ -312,6 +329,13 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
 #альтернативный обработчик под встроенную кнопку:
 @router.callback_query(lambda cb:cb.data=='show')
 async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
+    if last_bot_msg:
+            chat_id=qry.message.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await qry.message.answer(f'We got an exception:\n{e}')
     row=[InlineKeyboardButton(text='Показать все записи', callback_data='all'),  InlineKeyboardButton(text='Показать конкретную', callback_data='current')]
     rows=[row]
     mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
@@ -325,6 +349,14 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 #первый хэндлер для начала работы:
 @router.message(Command('show'))
 async def get_camp_handler(msg:Message, state:FSMContext):
+    await state.clear()
+    if last_bot_msg:
+            chat_id=msg.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await msg.answer(f'We got an exception:\n{e}')
     row=[InlineKeyboardButton(text='Показать все записи', callback_data='all'),  InlineKeyboardButton(text='Показать конкретную', callback_data='current')]
     rows=[row]
     mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
@@ -344,7 +376,8 @@ async def show_all_handler(qry:CallbackQuery):
                 del last_bot_msg[chat_id]
             except Exception as e:
                 await qry.message.answer(f'We got an exception:\n{e}')
-        response=database.get_campaign_all(conn=database.get_connection(), uid=str(qry.from_user.id))
+        response=BotCampaignTable(Database.get_connection())
+        response=response.get_campaign_all(uid=str(qry.from_user.id))
         if response:
             records=[]
             count=0
@@ -372,7 +405,9 @@ async def show_all_handler(qry:CallbackQuery):
         else:
             btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
             mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-            await qry.message.answer('У Вас пока нет записей, но можете их создать:', reply_markup=mrkp)
+            answer_msg=await qry.message.answer('У Вас пока нет записей, но можете их создать:', reply_markup=mrkp)
+            chat_id=qry.message.chat.id
+            last_bot_msg[chat_id]=answer_msg.message_id
     except Exception as e:
         await qry.message.answer(f'Exception!!!\n{e.args}')
 
@@ -382,8 +417,24 @@ async def show_all_handler(qry:CallbackQuery):
 #хэндлер для выведения конкретной записи:
 @router.callback_query(lambda cb:cb.data=='current')
 async def show_current_handler(qry:CallbackQuery, state:FSMContext):
-    await qry.message.answer('Введите ID записи:')
-    await state.set_state(ShowStates.putID)
+    if last_bot_msg:
+            chat_id=qry.message.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await qry.message.answer(f'We got an exception:\n{e}')
+    response=BotCampaignTable(Database.get_connection())
+    response=response.get_campaign_all(uid=str(qry.from_user.id))
+    if response:
+        await qry.message.answer('Введите ID записи:')
+        await state.set_state(ShowStates.putID)
+    else:
+        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
+        mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
+        answer_msg=await qry.message.answer('У Вас пока нет записей, но можете их создать:', reply_markup=mrkp)
+        chat_id=qry.message.chat.id
+        last_bot_msg[chat_id]=answer_msg.message_id
 
 
 @router.message(ShowStates.putID)
@@ -396,7 +447,8 @@ async def show_current_process(msg:Message, state:FSMContext):
                 del last_bot_msg[chat_id]
             except Exception as e:
                 await msg.answer(f'We got an exception:\n{e}')
-        response=database.get_campaign_current(conn=database.get_connection(), uid=msg.from_user.id, record_id=msg.text)
+        response=BotCampaignTable(Database.get_connection())
+        response=response.get_campaign_current(uid=msg.from_user.id, record_id=msg.text)
         firstfood=response['firstfood']
         lastfood=response['lastfood']
         if firstfood=='1':
@@ -427,51 +479,18 @@ async def show_current_process(msg:Message, state:FSMContext):
 
 
 
-#хэндлер для предоставления записи из БД
-@router.message(DBGetContext.get_id)
-async def process_get_id(msg:Message, state:FSMContext):
-    try:
-        if last_bot_msg:
-            chat_id=msg.chat.id
-            try:
-                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
-                del last_bot_msg[chat_id]
-            except Exception as e:
-                await msg.answer(f'We got an exception:\n{e}')
-        response=database.get_campaign(conn=database.get_connection(), campaign_id=int(msg.text))
-    except ValueError:
-        await msg.answer(f'Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
-    except TypeError:
-        await msg.answer('Такого id нет в таблице, введите, пожалуйста существующий id:')
-    else:
-        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
-        mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-        firstfood=response['firstfood']
-        lastfood=response['lastfood']
-        if firstfood=='1':
-            res='завтрак'
-        elif firstfood=='2':
-            res='обед'
-        else:
-            res='ужин' 
-
-        if lastfood=='1':
-            res_s='завтрак'
-        elif lastfood=='2':
-            res_s='обед'
-        else:
-            res_s='ужин' 
-        
-        await msg.answer(f"Ваша запись: \nДата начала-{response['startdate']}\nДата окончания-{response['enddate']}\nПервый прием пищи - {res}\nКонечный прием пищи - {res_s}",
-                         reply_markup=mrkp)
-        await state.clear()
-
-
 
 #хэндлер для обработки Меню:
 
 @router.callback_query(lambda cb:cb.data=='menu_button')
 async def menu_handler(qry:CallbackQuery):
+    if last_bot_msg:
+            chat_id=qry.message.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await qry.message.answer(f'We got an exception:\n{e}')
     chat_id=qry.message.chat.id
     btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
     btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
@@ -487,6 +506,13 @@ async def menu_handler(qry:CallbackQuery):
 
 @router.message(Command('help'))
 async def help_handler(msg:Message, state:FSMContext):
-    state.clear()
+    await state.clear()
+    if last_bot_msg:
+            chat_id=msg.chat.id
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=last_bot_msg[chat_id])
+                del last_bot_msg[chat_id]
+            except Exception as e:
+                await msg.answer(f'We got an exception:\n{e}')
     await msg.answer('Здесь пока ничего нет, опция в разработке...')
     

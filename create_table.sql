@@ -39,6 +39,7 @@ CREATE TABLE Menu (
   quantity INT,
   units VARCHAR(255),
   foodpreferences VARCHAR(255),
+  ID_
   ID_PRODUCT INT,
   FOREIGN KEY (ID_PRODUCT) REFERENCES Product(ID)
 );

@@ -7,6 +7,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 from camp_bot_handlers import router, bot
+#from menu_bot_handlers import routerMenu
 
 
 logging.basicConfig(level=logging.INFO)
