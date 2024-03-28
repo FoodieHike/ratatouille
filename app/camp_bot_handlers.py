@@ -2,7 +2,6 @@ from aiogram import Router, Bot
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from pydantic import ValidationError
 from datetime import datetime
 from aiogram.enums.parse_mode import ParseMode
 from psycopg2.errors import InvalidTextRepresentation
@@ -10,7 +9,7 @@ from psycopg2.errors import InvalidTextRepresentation
 from utils import calendar, months_creator, callback_date_converter
 import models
 from database import UsersTable, Database,BotCampaignTable
-from camp_bot_models import DBGetContext, DBCreateContext, DateValidation, Menu, UserRegistration, ShowStates
+from camp_bot_models import DBCreateContext, DateValidation, Menu, UserRegistration, ShowStates
 from config import BOT_API
 
 
@@ -305,18 +304,18 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         await state.set_data(data)
         creation=BotCampaignTable(Database.get_connection())
         creation.create_campaign(campaign=data,u_id=qry.from_user.id)
-        response=creation.get_campaign_bot_demo()
+        response=creation.get_campaign_last(qry.from_user.id)
         
         #определяем длину похода
         lenght=callback_date_converter(data['enddate'])-callback_date_converter(data['startdate'])
-        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
+        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')], [InlineKeyboardButton(text='Заполнить меню для похода', callback_data='food_menu_button')]]
         mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
         if str(lenght.days).endswith('1'):
-            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} день.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} день.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
         elif str(lenght.days).endswith('2') or str(lenght.days).endswith('3') or str(lenght.days).endswith('4'):
-            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} дня.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} дня.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
         else:
-            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days} дней.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
+            await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} дней.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
         await state.clear()
 
 
@@ -448,7 +447,7 @@ async def show_current_process(msg:Message, state:FSMContext):
             except Exception as e:
                 await msg.answer(f'We got an exception:\n{e}')
         response=BotCampaignTable(Database.get_connection())
-        response=response.get_campaign_current(uid=msg.from_user.id, record_id=msg.text)
+        response=response.get_campaign_by_id(uid=msg.from_user.id, record_id=msg.text)
         firstfood=response['firstfood']
         lastfood=response['lastfood']
         if firstfood=='1':

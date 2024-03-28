@@ -7,7 +7,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 from camp_bot_handlers import router, bot
-#from menu_bot_handlers import routerMenu
+from menu_bot_handlers import routerMenu
 
 
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +17,7 @@ logger=logging.getLogger(__name__)
 async def main():
     logger.info('бот запускается...')
     dp=Dispatcher(storage=MemoryStorage())
-    dp.include_router(router)
+    dp.include_routers(router, routerMenu)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 

@@ -81,3 +81,25 @@ def uid_creator(checker, conn, uid):        #вытаскивает tg_id из �
     table_row=checker(conn, uid).items()
     table_row=[list(x) for x in table_row]
     return table_row[3][1]
+
+
+#утилита для распрдеделения типов приемов пищи по порядку
+def meals_distributor(first_meal, meals_amount):
+    day_meals=[1,2,3]
+    meals_amount=[x for x in range(1, meals_amount+1)]
+    result={}
+    
+    if first_meal==3:
+        count=2
+    elif first_meal==2:
+        count=1
+    else:
+        count=0
+    print(count)
+
+    for meal in meals_amount:
+        result[meal]=day_meals[count]
+        count+=1
+        if count>2:
+            count=0
+    return result

@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from config import CONN_PARAMS
 from models import UserReg
 
+
 class Database:
     @staticmethod
     def get_connection():       
@@ -50,10 +51,10 @@ class BotCampaignTable(CampaignTable):
             return cursor.fetchone()
 
 
-    def get_campaign_bot_demo(self):        #получение последней записи из таблицы campaign
+    def get_campaign_last(self, uid):        #получение последней записи из таблицы campaign
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                sql.SQL("SELECT * FROM campaign ORDER BY id DESC LIMIT 1;"))
+                sql.SQL("SELECT * FROM campaign WHERE User_tg_id=%s ORDER BY id DESC LIMIT 1;"), (uid,))
             return cursor.fetchone()
         
     def get_campaign_all(self, uid):        #получение всех записей пользователя
@@ -64,15 +65,8 @@ class BotCampaignTable(CampaignTable):
                 ), (uid,)
             )   
             return cursor.fetchall()
-    
-    def get_campaign(self, campaign_id):        #получение записи из таблицы campaign
-        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(
-                sql.SQL("SELECT * FROM campaign WHERE id = %s;"),
-                (campaign_id,))
-            return cursor.fetchone()
         
-    def get_campaign_current(self, uid, record_id):     #получение конкретной записи пользователя
+    def get_campaign_by_id(self, uid, record_id):     #получение конкретной записи пользователя
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 sql.SQL(

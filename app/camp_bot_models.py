@@ -13,8 +13,6 @@ class DBCreateContext(StatesGroup):
     wait_for_firstfood=State()
     wait_for_lastfood=State()
 
-class DBGetContext(StatesGroup):
-    get_id=State()
 
 class Menu(StatesGroup):
     get_to_menu=State()
