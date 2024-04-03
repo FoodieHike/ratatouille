@@ -24,7 +24,7 @@ last_bot_msg={}     #сообщение для удаления
 
 #объекты для функционирования бота:
 
-router=Router()
+routerCampaign=Router()
 
 bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)
 
@@ -35,7 +35,7 @@ bot=Bot(token=BOT_API, parse_mode=ParseMode.HTML)
 
 #стартовый хэндлер:
 
-@router.message(Command('start'))
+@routerCampaign.message(Command('start'))
 async def start_handler(msg:Message, state:FSMContext):
     await state.clear()
     if last_bot_msg:
@@ -63,7 +63,7 @@ async def start_handler(msg:Message, state:FSMContext):
     
 
 #альтернативный обработчик под встроенную кнопку:
-@router.callback_query(lambda cb:cb.data=='create')
+@routerCampaign.callback_query(lambda cb:cb.data=='create')
 async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -93,7 +93,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 
 
 # Обработчик начальной команды для взаимодействий с таблицей походов
-@router.message(Command('create'))
+@routerCampaign.message(Command('create'))
 async def create_camp_handler(msg:Message, state:FSMContext):
     await state.clear()
     if last_bot_msg:
@@ -122,7 +122,7 @@ async def create_camp_handler(msg:Message, state:FSMContext):
 
 
 #Создание нового пользователя (сработает, если чекер не найдет его в таблице)
-@router.message(UserRegistration.register)
+@routerCampaign.message(UserRegistration.register)
 async def registration_handler(msg:Message, state:FSMContext):
     data={'name':msg.text}
     passgen=''.join([str(msg.from_user.full_name),'_', str(msg.from_user.id)[-4:]])     #заглушка для пароля (пока хз, зачем он)
@@ -138,7 +138,7 @@ async def registration_handler(msg:Message, state:FSMContext):
 
 
 # Обработчик для ввода startdate  первый
-@router.callback_query(DBCreateContext.wait_for_startdate_one)
+@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_one)
 async def process_startdate(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -161,7 +161,7 @@ async def process_startdate(qry:CallbackQuery, state:FSMContext):
 
 
 # Обработчик для ввода startdate второй
-@router.callback_query(DBCreateContext.wait_for_startdate_two)
+@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_two)
 async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -200,7 +200,7 @@ async def process_startdate_second(qry:CallbackQuery, state:FSMContext):
         await state.set_state(DBCreateContext.wait_for_enddate_one)
 
 #обработчик для enddate первый    
-@router.callback_query(DBCreateContext.wait_for_enddate_one)
+@routerCampaign.callback_query(DBCreateContext.wait_for_enddate_one)
 async def process_enddate(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -223,7 +223,7 @@ async def process_enddate(qry:CallbackQuery, state:FSMContext):
 
 
 #обработчик для enddate второй
-@router.callback_query(DBCreateContext.wait_for_enddate_two)
+@routerCampaign.callback_query(DBCreateContext.wait_for_enddate_two)
 async def process_enddate_second(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -257,7 +257,7 @@ async def process_enddate_second(qry:CallbackQuery, state:FSMContext):
 
 
 # Обработчик для ввода firstfood
-@router.callback_query(DBCreateContext.wait_for_firstfood)
+@routerCampaign.callback_query(DBCreateContext.wait_for_firstfood)
 async def process_firstfood(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -284,7 +284,7 @@ async def process_firstfood(qry:CallbackQuery, state:FSMContext):
 
 
 # Обработчик для ввода lastfood
-@router.callback_query(DBCreateContext.wait_for_lastfood)
+@routerCampaign.callback_query(DBCreateContext.wait_for_lastfood)
 async def process_lastfood(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
         chat_id=qry.message.chat.id
@@ -326,7 +326,7 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         
 
 #альтернативный обработчик под встроенную кнопку:
-@router.callback_query(lambda cb:cb.data=='show')
+@routerCampaign.callback_query(lambda cb:cb.data=='show')
 async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
             chat_id=qry.message.chat.id
@@ -346,7 +346,7 @@ async def create_inline_handler(qry:CallbackQuery, state:FSMContext):
 
 
 #первый хэндлер для начала работы:
-@router.message(Command('show'))
+@routerCampaign.message(Command('show'))
 async def get_camp_handler(msg:Message, state:FSMContext):
     await state.clear()
     if last_bot_msg:
@@ -365,7 +365,7 @@ async def get_camp_handler(msg:Message, state:FSMContext):
 
 
 #хэндлер для выведения всех записей:
-@router.callback_query(lambda cb:cb.data=='all')
+@routerCampaign.callback_query(lambda cb:cb.data=='all')
 async def show_all_handler(qry:CallbackQuery):
     try:
         if last_bot_msg:
@@ -414,7 +414,7 @@ async def show_all_handler(qry:CallbackQuery):
 
 
 #хэндлер для выведения конкретной записи:
-@router.callback_query(lambda cb:cb.data=='current')
+@routerCampaign.callback_query(lambda cb:cb.data=='current')
 async def show_current_handler(qry:CallbackQuery, state:FSMContext):
     if last_bot_msg:
             chat_id=qry.message.chat.id
@@ -436,7 +436,7 @@ async def show_current_handler(qry:CallbackQuery, state:FSMContext):
         last_bot_msg[chat_id]=answer_msg.message_id
 
 
-@router.message(ShowStates.putID)
+@routerCampaign.message(ShowStates.putID)
 async def show_current_process(msg:Message, state:FSMContext):
     try:
         if last_bot_msg:
@@ -481,7 +481,7 @@ async def show_current_process(msg:Message, state:FSMContext):
 
 #хэндлер для обработки Меню:
 
-@router.callback_query(lambda cb:cb.data=='menu_button')
+@routerCampaign.callback_query(lambda cb:cb.data=='menu_button')
 async def menu_handler(qry:CallbackQuery):
     if last_bot_msg:
             chat_id=qry.message.chat.id
@@ -503,7 +503,7 @@ async def menu_handler(qry:CallbackQuery):
 #хэндлер-заглушка для help:
 
 
-@router.message(Command('help'))
+@routerCampaign.message(Command('help'))
 async def help_handler(msg:Message, state:FSMContext):
     await state.clear()
     if last_bot_msg:

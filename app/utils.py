@@ -95,8 +95,7 @@ def meals_distributor(first_meal, meals_amount):
         count=1
     else:
         count=0
-    print(count)
-
+        
     for meal in meals_amount:
         result[meal]=day_meals[count]
         count+=1

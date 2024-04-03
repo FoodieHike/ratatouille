@@ -3,3 +3,4 @@ uvicorn[standard]
 psycopg2-binary
 pydantic
 aiogram==3.3.0
+reportlab==4.1.0

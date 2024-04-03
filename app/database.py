@@ -107,5 +107,21 @@ class UsersTable:
 #функции для таблицы записей в меню
     
 
-#def create_menu(conn,  camp_id)
+class MenuTable:
+    def __init__(self, conn):
+        self.conn=conn
+
+
+    def get_menu(self, feedtype):     
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                sql.SQL(
+                    'SELECT productname, quantity, units FROM menu WHERE feedtype=%s;'
+                ), (feedtype,)
+            )
+            return cursor.fetchall()
+
+    
+    
+    
     
