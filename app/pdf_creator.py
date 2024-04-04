@@ -5,13 +5,6 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.units import inch
 
 
-'''def auto_add_page(canvas, text, x, y, step):
-    if y < 50:  # Проверяем, достигли ли мы нижней границы страницы
-        canvas.showPage()  # Добавляем новую страницу
-        y = 800  # Сбрасываем положение Y в начальное положение сверху страницы A4
-    canvas.drawString(x, y, text)
-    return y - step  # Возвращаем новую позицию Y
-'''
 
 
 def pdf_creation(*meal_products, filename, startdate, enddate):
@@ -72,32 +65,3 @@ def pdf_creation(*meal_products, filename, startdate, enddate):
     # Завершаем страницу и сохраняем PDF
     c.showPage()
     c.save()
-
-
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.pagesizes import A4
-
-# Функция для автоматического добавления страниц
-def auto_add_page(canvas, text, x, y, step):
-    if y < 50:  # Проверяем, достигли ли мы нижней границы страницы
-        canvas.showPage()  # Добавляем новую страницу
-        y = 800  # Сбрасываем положение Y в начальное положение сверху страницы A4
-    canvas.drawString(x, y, text)
-    return y - step  # Возвращаем новую позицию Y
-
-# Настройки документа
-path = "auto_page_example.pdf"
-width, height = A4  # Используем размер A4
-c = Canvas(path, pagesize=A4)
-
-# Настройки текста
-x_position = 100
-y_position = height - 100  # Начинаем с верхней части страницы
-line_height = 15
-
-# Примерный контент
-for i in range(100):
-    text = f"Это строка номер {i+1}"
-    y_position = auto_add_page(c, text, x_position, y_position, line_height)
-
-c.save()  # Не забываем сохранить документ

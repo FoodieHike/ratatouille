@@ -10,7 +10,20 @@ from utils import calendar, months_creator, callback_date_converter
 import models
 from database import UsersTable, Database,BotCampaignTable
 from camp_bot_models import DBCreateContext, DateValidation, Menu, UserRegistration, ShowStates
-from config import BOT_API
+
+from dotenv import load_dotenv
+import os
+
+current_file_dir = os.path.abspath(os.path.dirname(__file__))
+
+env_path = os.path.join(current_file_dir, '..', '.env')
+
+load_dotenv(dotenv_path=env_path)
+
+BOT_API=os.getenv('BOT_API')
+
+
+
 
 
 

@@ -1,7 +1,20 @@
 from fastapi import FastAPI, HTTPException
 import psycopg2
 import database, models
-from config import CONN_PARAMS
+from dotenv import load_dotenv
+import os
+
+current_file_dir = os.path.abspath(os.path.dirname(__file__))
+
+env_path = os.path.join(current_file_dir, '..', '.env')
+
+load_dotenv(dotenv_path=env_path)
+
+CONN_PARAMS=os.getenv('CONN_PARAMS')
+
+
+
+
 
 
 app = FastAPI()

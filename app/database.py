@@ -2,9 +2,11 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 
-
 from config import CONN_PARAMS
 from models import UserReg
+
+
+
 
 
 class Database:
