@@ -102,3 +102,16 @@ def meals_distributor(first_meal, meals_amount):
         if count>2:
             count=0
     return result
+
+
+def bubble_sort(arr):
+    n = len(arr)
+    # Проходим по всем элементам массива
+    for i in range(n):
+        # Последние i элементов уже на месте
+        for j in range(0, n-i-1):
+            # Проходим по массиву от 0 до (n-i-1)
+            # Свапаем, если элемент найден больше, чем следующий элемент
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr

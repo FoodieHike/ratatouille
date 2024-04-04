@@ -116,7 +116,7 @@ class MenuTable:
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 sql.SQL(
-                    'SELECT productname, quantity, units FROM menu WHERE feedtype=%s;'
+                    'SELECT productname, quantity, units, feedname FROM menu WHERE feedtype=%s;'
                 ), (feedtype,)
             )
             return cursor.fetchall()

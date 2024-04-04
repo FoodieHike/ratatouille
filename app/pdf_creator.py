@@ -21,7 +21,7 @@ def pdf_creation(*meal_products, filename, startdate, enddate):
     # Регистрация жирного шрифта
     pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
 
-    pdf_catalog=f'/pdf_files/hike_$$menu&&_{filename}.pdf'
+    pdf_catalog=f'/pdf_files/hike_menu_{filename}.pdf'
 
     # Создаем объект canvas с размером страницы A4
     c = canvas.Canvas(pdf_catalog, pagesize=A4)
@@ -47,7 +47,7 @@ def pdf_creation(*meal_products, filename, startdate, enddate):
     c.setFont('DejaVuSans-Bold', 12) # Установка жирного шрифта
 
     for row in title.split('\n'):
-        c.drawString(150, y_position, row)
+        c.drawString(120, y_position, row)
 
     # Устанавливаем шрифт и размер
     c.setFont('DejaVuSans', 12)

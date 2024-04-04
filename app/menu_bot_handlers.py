@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, FSInputFile
 from aiogram.types.callback_query import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -154,6 +154,9 @@ async def menu_process(msg:Message, state:FSMContext):
                     break
     await state.set_data(data)
     
+
+
+
 #хэндлер для Овсянка и бутер с сыром
 @routerMenu.callback_query(lambda cb:cb.data=='B1')
 async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
@@ -163,9 +166,12 @@ async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
     record=MenuTable(Database.get_connection())
     record=record.get_menu('B1')
     full_list=[]
+    meal_name=False
     for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
         temp_row=' '.join([str(obj['quantity']*data['people_amount']),obj['units'],obj['productname']])
         full_list.append(temp_row)
+        if not meal_name:
+            meal_name=obj['feedname']
     res='\n'.join(full_list)
 
 
@@ -174,11 +180,18 @@ async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
     day,meal=crude_row.split('$')       #распределяем по переменным
 
     #формирование списка продуктов и счетчика меню
-    meal_products=f'Количество продуктов на всех участников похода\n(День похода - {day}, прием пищи - {meal}):\n{res}'
-    await qry.message.answer(f'Количество продуктов на всех участников похода (День похода - {day}, прием пищи - {meal}):\n{res}')
-    await qry.message.answer(f'cчетчик овсянок - {data["B1"]}')
+    meal_products=f'День похода - {day}, прием пищи - {meal} ({meal_name}):\n{res}'
+    #await qry.message.answer(f'Количество продуктов на всех участников похода \n{meal_name}(День похода - {day}, прием пищи - {meal}):\n{res}')
+    #await qry.message.answer(f'cчетчик овсянок - {data["B1"]}')
 
-    products_list=''.join(['prod', str(qry.message.message_id)])     #формирование ключа для записи в pdf
+    if meal=='завтрак':
+        feed=1
+    elif meal=='обед':
+        feed=2
+    else:
+        feed=3
+
+    products_list=''.join(['prod', str(day), str(feed)])     #формирование ключа для записи в pdf
 
     data[products_list]=meal_products       #запись строки с продуктами для формирования pdf документа
 
@@ -201,52 +214,85 @@ async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
         records_list=[]
         for key in data:
             if key.startswith('prod'):
-                records_list.append(data[key])
+                records_list.append(key)
+        utils.bubble_sort(records_list)
 
+        for i in range(len(records_list)):
+                records_list[i]=data[records_list[i]]
+        
+
+        
+        record
+        else_record=MenuTable(Database.get_connection())
+        else_record=else_record.get_menu('B2')
+
+        full_list=[]
+        else_meal_name=False
+        for obj in else_record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
+            temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B2']),obj['units'],obj['productname']])
+            full_list.append(temp_row)
+            if not else_meal_name:
+                else_meal_name=obj['feedname']
+        else_res='\n'.join(full_list)
+
+        for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
+            temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B1']),obj['units'],obj['productname']])
+            full_list.append(temp_row)
+            if not meal_name:
+                meal_name=obj['feedname']
+        res='\n'.join(full_list)
+
+
+
+        final_b1_result=f'Количество продуктов на всех участников похода\nдля приготовления всех блюд "{meal_name}":\n{res}'
+        final_b2_result=f'Количество продуктов на всех участников похода\nдля приготовления всех блюд "{else_meal_name}":\n{else_res}'
+        records_list.extend([final_b1_result, final_b2_result])
         await qry.message.answer('Формируем pdf и отправляем...')
-        result=pdf_creator.pdf_creation(*records_list, filename=qry.message.chat.id, startdate=data['startdate'], enddate=data['enddate'])
-        await qry.message.answer(f'{result}')
+
+        #создание файлика
+        pdf_creator.pdf_creation(*records_list, filename=qry.from_user.id, startdate=data['startdate'], enddate=data['enddate'])
+        pdf_file=FSInputFile(f'/pdf_files/hike_menu_{qry.from_user.id}.pdf')
+        await qry.message.answer_document(pdf_file)
         
-
- 
-        
-
-
-        
-    
-
-    
-
-    
-
 
 
 
 
 #хэндлер для пшенки с ковбаськой
 @routerMenu.callback_query(lambda cb:cb.data=='B2')
-async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
+async def feedtype_b2_handler(qry:CallbackQuery, state:FSMContext):
     data=await state.get_data()
     data['B2']+=1
-    
+
     record=MenuTable(Database.get_connection())
     record=record.get_menu('B2')
     full_list=[]
+    meal_name=False
     for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
         temp_row=' '.join([str(obj['quantity']*data['people_amount']),obj['units'],obj['productname']])
         full_list.append(temp_row)
+        if not meal_name:
+            meal_name=obj['feedname']
     res='\n'.join(full_list)
+
 
     crude_row=data[''.join(['msg_id',str(qry.message.message_id)])]      #достаем информацию о дне и приеме пище (в словаре состояний под номером id сообщения со встроенной кнопкой)
 
     day,meal=crude_row.split('$')       #распределяем по переменным
 
     #формирование списка продуктов и счетчика меню
-    meal_products=f'Количество продуктов на всех участников похода\n(День похода - {day}, прием пищи - {meal}):\n{res}'
-    await qry.message.answer(f'Количество продуктов на всех участников похода (День похода - {day}, прием пищи - {meal}):\n{res}')
-    await qry.message.answer(f'счетчик пшенок - {data["B2"]}')
+    meal_products=f'День похода - {day}, прием пищи - {meal} ({meal_name}):\n{res}'
+    #await qry.message.answer(f'Количество продуктов на всех участников похода \n{meal_name}(День похода - {day}, прием пищи - {meal}):\n{res}')
+    #await qry.message.answer(f'cчетчик овсянок - {data["B2"]}')
 
-    products_list=''.join(['prod', str(qry.message.message_id)])     #формирование ключа для записи в pdf
+    if meal=='завтрак':
+        feed=1
+    elif meal=='обед':
+        feed=2
+    else:
+        feed=3
+
+    products_list=''.join(['prod', str(day), str(feed)])     #формирование ключа для записи в pdf
 
     data[products_list]=meal_products       #запись строки с продуктами для формирования pdf документа
 
@@ -269,15 +315,51 @@ async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
         records_list=[]
         for key in data:
             if key.startswith('prod'):
-                records_list.append(data[key])
+                records_list.append(key)
+        utils.bubble_sort(records_list)
+
+        for i in range(len(records_list)):
+                records_list[i]=data[records_list[i]]
+        
 
         await qry.message.answer('Формируем pdf и отправляем...')
-        pdf_creator.pdf_creation(*records_list, filename=qry.message.chat.id, startdate=data['startdate'], enddate=data['enddate'])
+        record
+        else_record=MenuTable(Database.get_connection())
+        else_record=else_record.get_menu('B1')
+
+        full_list=[]
+        else_meal_name=False
+        for obj in else_record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
+            temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B1']),obj['units'],obj['productname']])
+            full_list.append(temp_row)
+            if not else_meal_name:
+                else_meal_name=obj['feedname']
+        else_res='\n'.join(full_list)
+
+        for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
+            temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B2']),obj['units'],obj['productname']])
+            full_list.append(temp_row)
+            if not meal_name:
+                meal_name=obj['feedname']
+        res='\n'.join(full_list)
+
+        final_b2_result=f'Количество продуктов на всех участников похода\nдля приготовления всех блюд "{meal_name}":\n{res}'
+        final_b1_result=f'Количество продуктов на всех участников похода\nдля приготовления всех блюд "{else_meal_name}":\n{else_res}'
+        records_list.extend([final_b2_result, final_b1_result])
+        
+
+        #создание файлика
+        pdf_creator.pdf_creation(*records_list, filename=qry.from_user.id, startdate=data['startdate'], enddate=data['enddate'])
+        pdf_file=FSInputFile(f'/pdf_files/hike_menu_{qry.from_user.id}.pdf')
+        await qry.message.answer_document(pdf_file)
+
+        
 
 
+        
+    
 
-
-
+    
 
 
 
