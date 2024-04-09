@@ -37,6 +37,13 @@ async def menu_handller(qry:CallbackQuery, state:FSMContext):
     await qry.message.answer('Меню для конкретного похода, или Вашей последней записи?', reply_markup=mrkp)
     await state.clear()
 
+#хэндлер для начала работы с меню (через команду)
+@routerMenu.message(Command('menu'))
+async def menu_handller(msg:Message, state:FSMContext):
+    row=[[InlineKeyboardButton(text='Выбрать по ID', callback_data='chooseID')], [InlineKeyboardButton(text='Последняя запись', callback_data='lastone')]]
+    mrkp=InlineKeyboardMarkup(inline_keyboard=row)
+    await msg.answer('Меню для конкретного похода, или Вашей последней записи?', reply_markup=mrkp)
+    await state.clear()
 
 
     
@@ -112,7 +119,7 @@ async def menu_process(msg:Message, state:FSMContext):
     meals_full_amount=feeds+data['extra_meal']
 
 
-    await msg.answer(f'В этом походе, у вас получается всего {meals_full_amount} приемов пищи.\nДавайте определим, что вы будете в них есть.\nХранилище данных:{data}')
+    await msg.answer(f'В этом походе, у вас получается всего {meals_full_amount} приемов пищи.\nДавайте определим, что вы будете в них есть.')
     first_meal=data['first_meal']
     count_days=data['days_amount']
     last_meal=data['last_meal']
@@ -154,6 +161,84 @@ async def menu_process(msg:Message, state:FSMContext):
                     break
     await state.set_data(data)
     
+
+
+
+
+        
+
+
+
+#хэндлер для предоставления последней записи
+@routerMenu.callback_query(lambda cb:cb.data=='lastone')
+async def menu_last_writing_handler(qry:CallbackQuery, state:FSMContext):
+    await state.clear()
+    date=await state.get_data()
+    try:
+        record=BotCampaignTable(Database.get_connection())
+        record=record.get_campaign_last(qry.from_user.id)
+        lenght=record['enddate']-record['startdate']        #определяем длительность похода
+
+    except TypeError:
+        row=[[InlineKeyboardButton(text='Создать запись',callback_data='create')],[InlineKeyboardButton(text='Вернуться в меню', callback_data='menu_button')]]
+        mrkp=InlineKeyboardMarkup(inline_keyboard=row)
+        await qry.message.answer('К сожалению не удалось найти ни одной записию Может хотите создать новую?', reply_markup=mrkp)
+    except ValueError:
+        await qry.message.answer('Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
+    except InvalidTextRepresentation:
+        await qry.message.answer('Неправильная форма записи!\nВведите, пожалуйста, корректный ID (натуральное число).')
+    else:
+        await state.set_data({'days_amount':lenght.days+1})
+        data=await state.get_data()
+        data['first_meal']=int(record['firstfood'])
+        data['last_meal']=int(record['lastfood'])
+        data['startdate']=record['startdate']
+        data['enddate']=record['enddate']
+        data['B1']=0
+        data['B2']=0
+
+        if record['firstfood']=='1':
+            firstday_feed_amount=3
+        elif record['firstfood']=='2':
+            firstday_feed_amount=2
+        else:
+            firstday_feed_amount=1
+
+        if record['lastfood']=='1':
+            lastday_feed_amount=1
+        elif record['lastfood']=='2':
+            lastday_feed_amount=2
+        else:
+            lastday_feed_amount=3
+        
+        #определяем количество дополнительных приемов пищи:
+        extra_meal=firstday_feed_amount+lastday_feed_amount
+
+        data['extra_meal']=extra_meal
+        await state.set_data(data)
+
+        await qry.message.answer('На сколько человек планируете поход?')
+        await state.set_state(ChooseIDStates.wait_for_people_amount)
+       
+
+
+
+        
+        
+
+
+    
+
+
+
+
+
+
+
+
+
+
+#Хэндлеры для обработки конкретной еды
 
 
 
@@ -235,6 +320,7 @@ async def feedtype_b1_handler(qry:CallbackQuery, state:FSMContext):
                 else_meal_name=obj['feedname']
         else_res='\n'.join(full_list)
 
+        full_list=[]
         for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
             temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B1']),obj['units'],obj['productname']])
             full_list.append(temp_row)
@@ -336,6 +422,7 @@ async def feedtype_b2_handler(qry:CallbackQuery, state:FSMContext):
                 else_meal_name=obj['feedname']
         else_res='\n'.join(full_list)
 
+        full_list=[]
         for obj in record:      #формируем сообщение с нужными пропорциями еды (надо будет отдельно функцию написать и бромсить в утилиты)
             temp_row=' '.join([str(obj['quantity']*data['people_amount']*data['B2']),obj['units'],obj['productname']])
             full_list.append(temp_row)
@@ -352,61 +439,6 @@ async def feedtype_b2_handler(qry:CallbackQuery, state:FSMContext):
         pdf_creator.pdf_creation(*records_list, filename=qry.from_user.id, startdate=data['startdate'], enddate=data['enddate'])
         pdf_file=FSInputFile(f'/pdf_files/hike_menu_{qry.from_user.id}.pdf')
         await qry.message.answer_document(pdf_file)
-
-        
-
-
-        
-    
-
-    
-
-
-
-
-#хэндлер для предоставления последней записи
-@routerMenu.callback_query(lambda cb:cb.data=='lastone')
-async def menu_last_writing_handler(qry:CallbackQuery, state:FSMContext):
-    await state.clear()
-    date=await state.get_data()
-    try:
-        record=BotCampaignTable(Database.get_connection())
-        record=record.get_campaign_last(qry.from_user.id)
-        firstfood=record['firstfood']
-        lastfood=record['lastfood']
-        lenght=record['enddate']-record['startdate']
-        if firstfood=='1':
-            res='завтрак'
-        elif firstfood=='2':
-            res='обед'
-        else:
-            res='ужин' 
-
-        if lastfood=='1':
-            res_s='завтрак'
-        elif lastfood=='2':
-            res_s='обед'
-        else:
-            res_s='ужин' 
-        btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')]]
-        mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-        await qry.message.answer(f"Ваша запись:\nдата начала похода - {record['startdate']}\nдата окончания похода -  {record['enddate']}\nпервый прием пищи - {res}\nпоследний прием пищи - {res_s}\nдлительность- {lenght.days}\nхранилище состояний - {date}",
-                         reply_markup=mrkp)
-    except TypeError:
-        row=[[InlineKeyboardButton(text='Создать запись',callback_data='create')],[InlineKeyboardButton(text='Вернуться в меню', callback_data='menu_button')]]
-        mrkp=InlineKeyboardMarkup(inline_keyboard=row)
-        await qry.message.answer('К сожалению не удалось найти ни одной записию Может хотите создать новую?', reply_markup=mrkp)
-    except ValueError:
-        await qry.message.answer('Неправильная форма записи!\nВведите пожалуйста корректный id (натуральное число):')
-    except InvalidTextRepresentation:
-        await qry.message.answer('Неправильная форма записи!\nВведите, пожалуйста, корректный ID (натуральное число).')
-    else:
-        await state.clear()
-        await qry.message.edit_reply_markup(reply_markup=None)
-
-
-
-
 
 
  

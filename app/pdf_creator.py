@@ -7,7 +7,7 @@ from reportlab.lib.units import inch
 
 
 
-def pdf_creation(*meal_products, filename, startdate, enddate):
+def pdf_creation(*meal_products, filename, startdate, enddate, total):
     # Регистрируем шрифт, поддерживающий кириллицу
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
 
@@ -55,11 +55,41 @@ def pdf_creation(*meal_products, filename, startdate, enddate):
                 if y_position<50:
                     c.showPage()
                     y_position=800
-                    c.setFont('DejaVuSans', 12)
-                    
+                    c.setFont('DejaVuSans', 12)           
     else:
         c.showPage()
         y_position=800
+
+    
+    fin='Общее количество всех продуктов на поход'
+
+    y_position-=150
+
+    c.setFont('DejaVuSans-Bold', 12) # Установка жирного шрифта
+
+    if y_position>50:
+        for row in fin.split('\n'):
+            c.drawString(120, y_position, row)
+    else:
+        c.showPage()
+        y_position=800
+    
+    y_position -= 15
+    # Устанавливаем шрифт и размер
+    c.setFont('DejaVuSans', 12)
+    if y_position>50:
+        for row in total.split('\n'):
+            c.drawString(50, y_position,  product)
+            y_position -= 15
+            if y_position<50:
+                c.showPage()
+                y_position=800
+                c.setFont('DejaVuSans', 12)           
+    else:
+        c.showPage()
+        y_position=800
+
+
 
 
     # Завершаем страницу и сохраняем PDF

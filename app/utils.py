@@ -2,7 +2,8 @@ from datetime import datetime, date
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-
+import re
+from collections import defaultdict
 
 
 
@@ -115,3 +116,44 @@ def bubble_sort(arr):
             if arr[j] > arr[j+1]:
                 arr[j], arr[j+1] = arr[j+1], arr[j]
     return arr
+
+
+#для подсчетьа всех продуктов
+def meal_total_count(data):
+    data=[data]
+    product_groups = defaultdict(list)
+
+    # шаблон для выделения строки с информацией по количеству определенного продукта
+    product_row=re.compile(r'(\d+ гр [^\n]+|\d+ шт [^\n]+)')
+
+    #шаблон для выделния количества
+    digits=re.compile(r'\d+')
+
+    # для обращения к ключам словаря
+    clean_products=[]
+
+    for item in data:
+        # находим строку с продуктами и количеством по шаблону
+        products=product_row.findall(item)
+        
+        for product in products:
+            # выделяем только название продукта для ключа в словаре
+            clean_product=re.sub(r'\d+ ', '', product)
+            number=digits.findall(product)
+            if clean_product not in clean_products:
+                clean_products.append(clean_product)
+            
+            for index in range(len(number)):
+                number[index]=int(number[index])
+            product_groups[clean_product].extend(number)
+        
+        for index in range(len(clean_products)):
+            x=0
+            for y in product_groups[clean_products[index]]:
+                x+=y
+            product_groups[clean_products[index]]=x
+    converted=[' '.join([key, str(value)]) for key, value in product_groups.items()]
+    result='\n'.join(converted)
+    return result
+
+

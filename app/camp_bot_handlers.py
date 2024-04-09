@@ -59,11 +59,11 @@ async def start_handler(msg:Message, state:FSMContext):
             except Exception as e:
                 await msg.answer(f'We got an exception:\n{e}')
     chat_id=msg.chat.id
-    btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
-    btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
-    row=[btn_create, btn_show]
-    rows=[row]
-    mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
+    btn_create=InlineKeyboardButton(text='Создать новый поход', callback_data='create')
+    btn_show=InlineKeyboardButton(text='Показать запись похода', callback_data='show')
+    btn_menu=InlineKeyboardButton(text='Составить меню для похода', callback_data='food_menu_button')
+    row=[[btn_create], [btn_show], [btn_menu]]
+    mrkp=InlineKeyboardMarkup(inline_keyboard=row)
     greetings=await msg.answer(text='Привет. Я буду работать с базой данных. Пока ограничимся записью в таблицу походов и просмотром записей. Предлагаю перейти к командам:',
                      reply_markup=mrkp)
     last_bot_msg[chat_id]=greetings.message_id
@@ -506,9 +506,9 @@ async def menu_handler(qry:CallbackQuery):
     chat_id=qry.message.chat.id
     btn_create=InlineKeyboardButton(text='Создать запись', callback_data='create')
     btn_show=InlineKeyboardButton(text='Показать запись', callback_data='show')
-    row=[btn_create, btn_show]
-    rows=[row]
-    mrkp=InlineKeyboardMarkup(inline_keyboard=rows)
+    btn_menu=InlineKeyboardButton(text='Составить меню для похода', callback_data='food_menu_button')
+    row=[[btn_create], [btn_show], [btn_menu]]
+    mrkp=InlineKeyboardMarkup(inline_keyboard=row)
     menu=await qry.message.answer(text='Что будем делать дальше?', reply_markup=mrkp)
     last_bot_msg[chat_id]=menu.message_id
     
