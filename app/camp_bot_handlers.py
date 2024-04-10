@@ -64,7 +64,7 @@ async def start_handler(msg:Message, state:FSMContext):
     btn_menu=InlineKeyboardButton(text='Составить меню для похода', callback_data='food_menu_button')
     row=[[btn_create], [btn_show], [btn_menu]]
     mrkp=InlineKeyboardMarkup(inline_keyboard=row)
-    greetings=await msg.answer(text='Привет. Я буду работать с базой данных. Пока ограничимся записью в таблицу походов и просмотром записей. Предлагаю перейти к командам:',
+    greetings=await msg.answer(text='Привет. Меня зовут Hike Helper. Я помогу тебе разработать меню для твоего похода и рассчитаю все необходимые для него продукты. Выбери, что будем делать дальше:',
                      reply_markup=mrkp)
     last_bot_msg[chat_id]=greetings.message_id
     
@@ -323,9 +323,9 @@ async def process_lastfood(qry:CallbackQuery, state:FSMContext):
         lenght=callback_date_converter(data['enddate'])-callback_date_converter(data['startdate'])
         btn=[[InlineKeyboardButton(text='Выйти в меню', callback_data='menu_button')], [InlineKeyboardButton(text='Заполнить меню для похода', callback_data='food_menu_button')]]
         mrkp=InlineKeyboardMarkup(inline_keyboard=btn)
-        if str(lenght.days).endswith('1'):
+        if str(lenght.days+1).endswith('1'):
             await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} день.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
-        elif str(lenght.days).endswith('2') or str(lenght.days).endswith('3') or str(lenght.days).endswith('4'):
+        elif str(lenght.days+1).endswith('2') or str(lenght.days).endswith('3') or str(lenght.days).endswith('4'):
             await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} дня.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)
         else:
             await qry.message.answer(f'Спасибо, данные у меня.\nДлительность похода составляет {lenght.days+1} дней.\nID Вашей записи - {response["id"]}', reply_markup=mrkp)

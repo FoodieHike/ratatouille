@@ -14,7 +14,7 @@ def pdf_creation(*meal_products, filename, startdate, enddate, total):
     # Регистрация жирного шрифта
     pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
 
-    pdf_catalog=f'/pdf_files/hike_menu_{filename}.pdf'
+    pdf_catalog = f'/pdf_files/hike_menu_{filename}.pdf'
 
     # Создаем объект canvas с размером страницы A4
     c = canvas.Canvas(pdf_catalog, pagesize=A4)
@@ -32,10 +32,10 @@ def pdf_creation(*meal_products, filename, startdate, enddate, total):
 
 
     # Заголовок
-    title=f'Походное меню (период с {startdate} по {enddate})'
+    title = f'Походное меню (период с {startdate} по {enddate})'
 
 
-    y_position-=150
+    y_position -= 150
 
     c.setFont('DejaVuSans-Bold', 12) # Установка жирного шрифта
 
@@ -44,7 +44,7 @@ def pdf_creation(*meal_products, filename, startdate, enddate, total):
 
     # Устанавливаем шрифт и размер
     c.setFont('DejaVuSans', 12)
-    if y_position>50:
+    if y_position > 50:
         for row in meal_products:
 
             # Добавляем текст после изображения
@@ -58,40 +58,44 @@ def pdf_creation(*meal_products, filename, startdate, enddate, total):
                     c.setFont('DejaVuSans', 12)           
     else:
         c.showPage()
-        y_position=800
+        y_position = 800
 
     
     fin='Общее количество всех продуктов на поход'
 
-    y_position-=150
+    y_position -= 100
 
     c.setFont('DejaVuSans-Bold', 12) # Установка жирного шрифта
 
-    if y_position>50:
+    if y_position > 50:
         for row in fin.split('\n'):
             c.drawString(120, y_position, row)
     else:
         c.showPage()
-        y_position=800
+        y_position = 800
+        c.setFont('DejaVuSans-Bold', 12) # Установка жирного шрифта
+        for row in fin.split('\n'):
+            c.drawString(120, y_position, row)
     
-    y_position -= 15
+    y_position -= 30
     # Устанавливаем шрифт и размер
     c.setFont('DejaVuSans', 12)
-    if y_position>50:
+    if y_position > 50:
         for row in total.split('\n'):
-            c.drawString(50, y_position,  product)
+            c.drawString(50, y_position,  row)
             y_position -= 15
             if y_position<50:
                 c.showPage()
-                y_position=800
+                y_position = 800
                 c.setFont('DejaVuSans', 12)           
     else:
         c.showPage()
-        y_position=800
+        y_position = 800
 
 
 
 
-    # Завершаем страницу и сохраняем PDF
+    # Завершаем 
+    # страницу и сохраняем PDF
     c.showPage()
     c.save()
