@@ -53,14 +53,14 @@ def calendar(year, month):      #функция для построения кл
 
 
 
-def months_creator(in_row):     #создает клавиатуру с месяцами
+def months_creator(buttons_in_row):     #создает клавиатуру с месяцами
     months=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь']
-    row=[InlineKeyboardButton(text=day, callback_data=str(x)) for day, x in zip(months, range(1, len(months)+1))]
+    row=[InlineKeyboardButton(text=day, callback_data=str(days_number)) for day, days_number in zip(months, range(1, len(months)+1))]
     rows=[]
     rows_fin=[]
-    for i in row:
-        rows.append(i)
-        if len(rows)==in_row:
+    for button in row:
+        rows.append(button)
+        if len(rows)==buttons_in_row:
             rows_fin.append(rows)
             rows=[]
     mrkp=InlineKeyboardMarkup(inline_keyboard=rows_fin)
