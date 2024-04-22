@@ -6,6 +6,8 @@ from config import CONN_PARAMS
 from models import UserReg
 
 
+from flask import request, redirect
+
 
 
 
@@ -102,6 +104,36 @@ class UsersTable:
             )
             self.conn.commit()
             return cursor.fetchone()
+    
+    
+    #для добавления пользователя через админку:
+    @staticmethod
+    def add_user(conn, name, password, tg_id=None):
+        with conn.cursor() as cursor:
+            cursor.execute(
+                sql.SQL('INSERT INTO users (name, password, tg_id) VALUES (%s, %s, %s)'),
+                (name, password, tg_id)
+            )
+            conn.commit()  
+
+        return redirect('/administration/admin/users/')
+        
+    def get_users_all(conn):
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                sql.SQL(
+                    'SELECT * FROM users'
+                )
+            ) 
+            return cursor.fetchall()
+        
+    def delete_user(conn, id):
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'DELETE FROM users WHERE id = %s',
+                (id,)
+            )
+            conn.commit()
         
 
 

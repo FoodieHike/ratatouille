@@ -1,0 +1,102 @@
+{% extends 'admin/master.html' %}
+
+
+{% block body %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Users</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        .delete-btn {
+            background-color: gray;
+            border: none;
+            font-size: 16px;
+        }
+
+        .delete-btn i.fa {
+            margin-right: 5px;
+        }
+        .edit-btn, .delete-btn {
+            margin: 0; /*  отступы кнопок на 0 */
+            padding: 5px 10px; /*  внутренние отступы */
+        }
+        .btn {
+        display: inline-block; 
+        margin-right: 5px; 
+        }
+    </style>
+</head>
+<h1>Таблица пользователей</h1>
+<h5>Добавить пользователя</h5>
+    <form method="POST" action="add" class="form-inline">
+        <div class="form-group">
+            <input type="text" name="name" placeholder="Name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <input type="text" name="password" placeholder="Password" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <input type="number" name="tg_id" id="tg_id" placeholder="TG ID" class="form-control" required>
+            <span id="error-msg" style="color: gray;"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Add User</button>
+    </form>
+
+    <script>
+        document.getElementById('tg_id').addEventListener('input', checkInputLength);
+
+        function checkInputLength() {
+            var input = document.getElementById("tg_id");
+            var errorMsg = document.getElementById("error-msg");
+            
+            if (input.value.length < 9) {
+                errorMsg.innerText = "Минимальное количество символов: 9";
+            } else {
+                errorMsg.innerText = "";
+            }
+        }
+    </script>
+
+    
+    <table class="table table-striped">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Password</th>
+            <th>TG ID</th>
+            <th></th>  <!-- новая колонка для действий -->
+            <th></th>  
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.password }}</td>
+            <td>{{ user.tg_id }}</td>
+            <td>  <!-- Кнопка удаления в виде корзины -->
+                <td style="white-space: nowrap;">  
+                    <form method="POST" action="/admin/users/edit/{{ user.id }}" style="display: inline-block;">
+                        <button type="submit" class="btn btn-primary edit-btn">
+                            <i class="fa fa-pencil"></i> 
+                        </button>
+                    </form>
+                    <form method="POST" action="delete/{{ user.id }}" style="display: inline-block;">
+                        <button type="submit" class="btn btn-danger delete-btn">
+                            <i class="fa fa-trash"></i> 
+                        </button>
+                    </form>
+                </td>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+
+{% endblock body %}
+
+</html>

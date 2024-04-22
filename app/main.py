@@ -1,8 +1,16 @@
 from fastapi import FastAPI, HTTPException
+
 import psycopg2
 import database, models
 from dotenv import load_dotenv
 import os
+
+from starlette.middleware.wsgi import WSGIMiddleware
+
+
+from admin import app as flask_app
+
+
 
 current_file_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -16,8 +24,12 @@ CONN_PARAMS=os.getenv('CONN_PARAMS')
 
 
 
-
+#Создаем приложение и интегрируем к нему фласк админскую приложуху
 app = FastAPI()
+
+app.mount('/administration/', WSGIMiddleware(flask_app))
+
+
 
 @app.post("/campaign/", response_model=models.Campaign)
 async def create_campaign(campaign: models.CampaignCreate):       #эндпоинт для наполнения таблицы campaign
