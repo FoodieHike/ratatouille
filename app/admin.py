@@ -66,6 +66,18 @@ def create_user():
     return redirect('/administration/admin/users/')
     
 
+@app.route('/admin/campaign/add', methods=['POST'])
+def add_campaign(user_id=0):
+    startdate = request.form['startdate']
+    enddate = request.form['enddate']
+    firstfood = request.form['firstfood']
+    lastfood = request.form['lastfood']
+    conn = Database.get_connection()
+    print('request received')
+    CampaignTable.add_campaign(conn=conn, startdate=startdate, enddate=enddate, firstfood=firstfood, lastfood=lastfood)
+    return redirect('/administration/admin/campaign/')
+    
+
 
 
 

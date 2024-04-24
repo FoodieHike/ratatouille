@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.templating import Jinja2Templates
+
 
 import psycopg2
 import database, models
@@ -17,6 +19,8 @@ from admin import app as flask_app
 
 #Создаем приложение и интегрируем к нему фласк админскую приложуху
 app = FastAPI()
+
+templates= Jinja2Templates(directory='templates')
 
 app.mount('/administration/', WSGIMiddleware(flask_app))
 
@@ -42,3 +46,8 @@ async def root():
     cursor.close()
     conn.close()
     return {"message": "Checkout 1488, foooood!", "db_version": db_version}
+
+
+@app.get('/admin/')
+async def admin(request:Request):
+    return templates.TemplateResponse('fastapi_index.html', {'request':request})

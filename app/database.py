@@ -40,6 +40,8 @@ class CampaignTable:
                 (campaign.startdate, campaign.enddate, campaign.firstfood, campaign.lastfood))
             self.conn.commit()
             return cursor.fetchone()
+        
+    #метод для добавления всех строк в таблицу админки
     @staticmethod
     def get_campaign_all(conn):        #получение всех записей пользователя
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -49,6 +51,16 @@ class CampaignTable:
                 )
             )   
             return cursor.fetchall()
+    
+    @staticmethod
+    def add_campaign(conn, startdate, enddate, firstfood, lastfood, user_id=0):
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO campaign (startdate, enddate, firstfood, lastfood, user_tg_id) VALUES (%s, %s, %s, %s, %s)',
+                (startdate, enddate, firstfood, lastfood, user_id)
+            )
+            conn.commit()
+
 
 
 
@@ -124,8 +136,7 @@ class UsersTable:
                 (name, password, tg_id)
             )
             conn.commit()  
-
-        return redirect('/administration/admin/users/')
+            
     @staticmethod     
     def get_users_all(conn):
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
