@@ -40,6 +40,15 @@ class CampaignTable:
                 (campaign.startdate, campaign.enddate, campaign.firstfood, campaign.lastfood))
             self.conn.commit()
             return cursor.fetchone()
+    @staticmethod
+    def get_campaign_all(conn):        #получение всех записей пользователя
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                sql.SQL(
+                    'SELECT * FROM campaign;'
+                )
+            )   
+            return cursor.fetchall()
 
 
 
@@ -117,7 +126,7 @@ class UsersTable:
             conn.commit()  
 
         return redirect('/administration/admin/users/')
-        
+    @staticmethod     
     def get_users_all(conn):
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -126,7 +135,7 @@ class UsersTable:
                 )
             ) 
             return cursor.fetchall()
-        
+    @staticmethod    
     def delete_user(conn, id):
         with conn.cursor() as cursor:
             cursor.execute(

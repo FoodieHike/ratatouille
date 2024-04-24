@@ -3,7 +3,7 @@ from flask_admin import Admin, BaseView, expose, AdminIndexView
 
 
 
-from database import UsersTable, Database
+from database import UsersTable, Database, CampaignTable
 
 
 
@@ -20,7 +20,9 @@ class DashBoard(AdminIndexView):
     def add_data_db(self):
         users=UsersTable.get_users_all(Database.get_connection())
         users=[dict(x) for x in users]
-        return self.render('admin/dashboard_index.html', users=users)
+        campaigns=CampaignTable.get_campaign_all(Database.get_connection())
+        campaigns=[dict(x) for x in campaigns]
+        return self.render('admin/dashboard_index.html', users=users, campaigns=campaigns)
 
 #для отображения списка пользователей в таблице админки
 class Users(BaseView):
@@ -28,7 +30,13 @@ class Users(BaseView):
     def any_page(self):
         users=UsersTable.get_users_all(Database.get_connection())
         return self.render('users.html', users=users)
+    
 
+class Campaign(BaseView):
+    @expose('/')
+    def page(self):
+        campaigns=CampaignTable.get_campaign_all(Database.get_connection())
+        return self.render('campaign.html', campaigns=campaigns)
 
 
 #Функции для взаимодействия с админкой
@@ -49,23 +57,14 @@ def delete(id):
 
 #для добавления записи в таблицу
 @app.route('/admin/users/add', methods=['POST'])
-def add_user():
+def create_user():
     name = request.form['name']
     password = request.form['password']
     tg_id = request.form['tg_id']
     conn = Database.get_connection()
-
-    UsersTable.add_user(conn=conn, name=name, password=password )
-    
-    with connection.cursor() as cursor:
-        cursor.execute(
-            sql.SQL("INSERT INTO users (name, password, tg_id) VALUES (%s, %s, %s)"),
-            (name, password, tg_id)
-        )
-        connection.commit()  # Не забудьте выполнить commit!
-
+    UsersTable.add_user(conn=conn, name=name, password=password, tg_id=tg_id)
     return redirect('/administration/admin/users/')
-
+    
 
 
 
@@ -74,6 +73,7 @@ def add_user():
 
 admin = Admin(app, name='Моя админка', template_mode='bootstrap3', endpoint='admin', index_view=DashBoard())
 admin.add_view(Users(name='Пользователи'))
+admin.add_view(Campaign(name='Походы'))
 
 
 

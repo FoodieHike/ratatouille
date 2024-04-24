@@ -2,23 +2,14 @@ from fastapi import FastAPI, HTTPException
 
 import psycopg2
 import database, models
-from dotenv import load_dotenv
-import os
 
+from config import CONN_PARAMS
 from starlette.middleware.wsgi import WSGIMiddleware
 
 
 from admin import app as flask_app
 
 
-
-current_file_dir = os.path.abspath(os.path.dirname(__file__))
-
-env_path = os.path.join(current_file_dir, '..', '.env')
-
-load_dotenv(dotenv_path=env_path)
-
-CONN_PARAMS=os.getenv('CONN_PARAMS')
 
 
 
@@ -38,7 +29,7 @@ async def create_campaign(campaign: models.CampaignCreate):       #эндпои�
         new_campaign = database.create_campaign(conn, campaign)
         if new_campaign:
             return new_campaign
-        raise HTTPException(status_code=404, detail="Ya hui znaet, gde ono")
+        raise HTTPException(status_code=404, detail='Not found')
     finally:
         conn.close()
 
