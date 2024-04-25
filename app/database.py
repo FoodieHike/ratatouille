@@ -61,6 +61,16 @@ class CampaignTable:
             )
             conn.commit()
 
+    @staticmethod
+    def update_campaign(conn, startdate, enddate, firstfood, lastfood, id, user_tg_id=0):
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                sql.SQL(
+                    'UPDATE campaign SET startdate=%s, enddate=%s, firstfood=%s, lastfood=%s, user_tg_id=%s WHERE id=%s'
+                ), (startdate, enddate, firstfood, lastfood, user_tg_id, id)
+            )
+            conn.commit()
+
 
 
 
@@ -146,12 +156,23 @@ class UsersTable:
                 )
             ) 
             return cursor.fetchall()
+        
     @staticmethod    
     def delete_user(conn, id):
         with conn.cursor() as cursor:
             cursor.execute(
                 'DELETE FROM users WHERE id = %s',
                 (id,)
+            )
+            conn.commit()
+
+    @staticmethod
+    def update_users(conn, id, name, password, tg_id):
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                sql.SQL(
+                    'UPDATE users SET name=%s, password=%s, tg_id=%s WHERE id=%s'
+                ), (name, password, tg_id, id)
             )
             conn.commit()
         

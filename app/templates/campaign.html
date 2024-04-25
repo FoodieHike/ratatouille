@@ -47,7 +47,7 @@ Admin Panel - Campaigns
             <td>{{ campaign.user_tg_id }}</td>
             <td>  <!-- Добавляем кнопку удаления в виде корзины -->
                 <td style="white-space: nowrap;">  
-                    <form method="POST" action="/admin/users/edit/{{ campaign.id }}" style="display: inline-block;">
+                    <form method="GET" action="edit/{{ campaign.id }}/{{ campaign.startdate }}/{{ campaign.enddate }}/{{ campaign.firstfood }}/{{ campaign.lastfood }}/{{ campaign.user_tg_id }}" style="display: inline-block;">
                         <button type="submit" class="btn btn-primary edit-btn">
                             <i class="fa fa-pencil"></i> 
                         </button>

@@ -50,7 +50,7 @@ Admin Panel - Users
             <td>{{ user.tg_id }}</td>
             <td>  <!-- Добавляем кнопку удаления в виде корзины -->
                 <td style="white-space: nowrap;">  
-                    <form method="POST" action="/admin/users/edit/{{ user.id }}" style="display: inline-block;">
+                    <form method="GET" action="edit/{{ user.id }}/{{ user.name }}/{{ user.password }}/{{ user.tg_id }}" style="display: inline-block;">
                         <button type="submit" class="btn btn-primary edit-btn">
                             <i class="fa fa-pencil"></i> 
                         </button>
