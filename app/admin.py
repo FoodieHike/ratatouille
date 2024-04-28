@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_admin import Admin, BaseView, expose, AdminIndexView
 
-import utils
+from psycopg2.extras import DictCursor
+import hashlib 
 
+
+import utils
 from database import UsersTable, Database, CampaignTable
 
 
@@ -42,12 +45,6 @@ class Campaign(BaseView):
 
 
 #Функции для взаимодействия с админкой
-
-#для стартовой страницы
-@app.get('/')
-def index():
-    return render_template('index.html')
-
 
 
 #хэндлер для удаления записи из таблицы
@@ -155,6 +152,56 @@ def campaign_update():
 admin = Admin(app, name='Моя админка', template_mode='bootstrap3', endpoint='admin', index_view=DashBoard())
 admin.add_view(Users(name='Пользователи'))
 admin.add_view(Campaign(name='Походы'))
+
+
+
+
+#аутентификация пользователей
+
+
+
+
+
+app.secret_key = 'wpww_1488_kkk'
+
+def verify_password(user_password, stored_password):
+    return hashlib.md5(user_password.encode()).hexdigest() == stored_password
+
+
+
+#для стартовой страницы
+@app.route('/')
+def home():
+    if 'username' in session:
+        return render_template('index.html')
+
+    else:
+        return 'Вы не зарегистрированы! Хотите войти? <br><a href="/administration/login">Войти</a>'
+    
+
+#хэндлер для аутентификации пользователей по логину/паролю
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        conn=Database.get_connection()
+        username = request.form['username']
+        password = request.form['password']
+        cur = conn.cursor(cursor_factory=DictCursor)
+        cur.execute("SELECT * FROM admins WHERE username=%s", (username,))
+        user = cur.fetchone()
+        cur.close()
+        if user and verify_password(password, user['password']):
+            session['username'] = user['username']
+            return redirect(url_for('home'))
+        else:
+            return 'Error: Invalid Credentials'
+    return render_template('login.html')
+
+#для разлогирования
+@app.route('/admin/users/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('home'))
 
 
 
