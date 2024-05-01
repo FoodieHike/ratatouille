@@ -206,7 +206,7 @@ def login():
     return render_template('login.html')
 
 #для разлогирования
-@app.route('/admin/users/logout')
+@app.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
