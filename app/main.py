@@ -1,14 +1,14 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
 
 
 import psycopg2
 import database, models
-
-from config import CONN_PARAMS
 from starlette.middleware.wsgi import WSGIMiddleware
 
-
+from config import CONN_PARAMS
 from admin import app as flask_app
 
 
@@ -21,6 +21,8 @@ from admin import app as flask_app
 app = FastAPI()
 
 templates= Jinja2Templates(directory='templates')
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.mount('/administration/', WSGIMiddleware(flask_app))
 
@@ -37,15 +39,9 @@ async def create_campaign(campaign: models.CampaignCreate):       #эндпои�
     finally:
         conn.close()
 
-@app.get("/")
-async def root():
-    conn = psycopg2.connect(**CONN_PARAMS)
-    cursor = conn.cursor()
-    cursor.execute("SELECT version();")
-    db_version = cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
-    return {"message": "Checkout 1488, foooood!", "db_version": db_version}
+@app.get('/')
+async def read_root(request:Request):
+    return templates.TemplateResponse('main.html', {'request':request})
 
 
 @app.get('/admin/')

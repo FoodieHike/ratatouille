@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foodie Hike</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+
+            background: url('../static/background.png') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .column {
+            background-color: rgba(127, 255, 212, 0.5);
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            text-shadow: 
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px  1px 0 #000,
+                1px  1px 0 #000; /* Черная обводка */
+            border-radius: 10px; /* Сглаживает углы блока */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Добавляет размытие границ */
+            max-width: 400px;
+        }
+
+        .button {
+            background-color: #f06c64;
+            color: white;
+            text-shadow: 
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px  1px 0 #000,
+                1px  1px 0 #000; /* Черная обводка */
+            padding: 10px 20px;
+            text-align: center;
+            display: inline-block;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.3s;
+            bottom: 50%;
+        }
+        .button:hover {
+            background-color: #ff7f50;
+            transform: scale(1.1);
+            
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            text-align: center;
+            margin-top: 20px;
+            color: aliceblue;
+            text-shadow: 
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px  1px 0 #000,
+                1px  1px 0 #000; /* Черная обводка */
+            background-color:rgba(127, 255, 212, 0.5) ;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.3s;
+                
+        }
+        .icon {
+            margin: 5px;
+            height: 40px;
+            width: 40px;
+            transition: transform 0.3s ease; /* Анимация занимает 0.3 секунды и плавно изменяется */
+            display: inline-block; /* Убедитесь, что изображение отображается как инлайн-блок */
+            vertical-align: middle; /* Для выравнивания по центру относительно других элементов */
+        }
+
+        .icon:hover {
+            transform: scale(1.2); /* Увеличение размера изображения на 20% при наведении */
+        }
+
+        .btnBot{
+            margin: 5px;
+            height: 40px;
+            width: 40px;
+            transition: transform 0.3s ease; /* Анимация занимает 0.3 секунды и плавно изменяется */
+            display: inline-block; /* Убедитесь, что изображение отображается как инлайн-блок */
+            vertical-align: middle; /* Для выравнивания по центру относительно других элементов */
+        }
+
+    </style>
+</head>
+<body>
+    <div>
+        <img src="../static/logo.png" alt="logo">
+    </div>
+    <div class="container">
+        <div class="column">Вы готовитесь к походу и мечтаете о вкусной и питательной еде на природе без хлопот со сбором продуктов? Представляем вам идеального помощника – приложение
+            "Foodie Hike"! Забудьте о головной боли при планировании еды на каждый день вашего приключения! "Foodie Hike" предложит вам разнообразные варианты меню, от классической гречневой
+             каши с тушенкой до аппетитных бутербродов с сыром, и обеспечит вас всем необходимым – от завтрака до ужина. Вам только нужно выбрать понравившиеся блюда, и наше приложение 
+             автоматически рассчитает точное количество нужных продуктов. Нет больше необходимости в догадках и перерасходе – только точный перечень продуктов, легкий багаж и больше места 
+             для удовольствия!
+        Почему "Foodie Hike" – это ваш лучший выбор для похода?
+            - Персонализированное меню: выбирайте блюда в соответствии с вашими предпочтениями и диетическими потребностями.
+            - Экономия времени: планируйте каждый прием пищи за несколько минут, а не часы.
+            - Точный расчет продуктов: контролируйте количество пищи, необходимое для каждого участника.
+            - Простота и удобство: легкий интерфейс и доступность в любом месте, даже без доступа к интернету.
+        Подготовьтесь к своему следующему приключению с энтузиазмом и уверенностью – пусть "Foodie Hike" позаботится о вашем питании!  <> Переходите в нашего бота по кнопке ниже и 
+            наслаждайтесь каждым кусочком природы без лишних хлопот! 
+        </div>
+    </div>
+    <button class="button" onclick="window.location.href='https://t.me/c_table_bot'"><img src="../static/btn.png" alt="btn" class="btnBot">Foodie Hike</button>
+    <div  class="footer">
+        <p>Contact us at: info@foodiehike.com</p>
+        <a href="#"><img src="../static/icon-facebook.png" class="icon" alt="Facebook"/></a>
+        <a href="#"><img src="../static/icon-twitter.png" class="icon" alt="Twitter"/></a>
+        <a href="#"><img src="../static/icon-instagram.png" class="icon" alt="Instagram"/></a>
+        <a href="https://t.me/mr_losuit"><img src="../static/icon-telegram.png" class="icon" alt="Instagram"/></a>
+    </div>
+</body>
+</html>
+

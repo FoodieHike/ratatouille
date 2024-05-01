@@ -49,9 +49,17 @@ class Campaign(BaseView):
 
 #хэндлер для удаления записи из таблицы
 @app.route('/admin/users/delete/<int:id>', methods=['POST'])
-def delete(id):
+def delete_user(id):
     UsersTable.delete_user(Database.get_connection(), id)
     return redirect('/administration/admin/users/')
+
+
+@app.route('/admin/campaign/delete/<int:id>', methods=['POST'])
+def delete_campaign(id):
+    CampaignTable.delete_campaign(Database.get_connection(), id)
+    return redirect('/administration/admin/campaign')
+
+
 
 
 #для добавления записей в таблицы

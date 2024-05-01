@@ -51,6 +51,14 @@ class CampaignTable:
                 )
             )   
             return cursor.fetchall()
+    @staticmethod    
+    def delete_campaign(conn, id):
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'DELETE FROM campaign WHERE id = %s',
+                (id,)
+            )
+            conn.commit()
     
     @staticmethod
     def add_campaign(conn, startdate, enddate, firstfood, lastfood, user_id=0):
