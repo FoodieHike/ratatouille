@@ -123,7 +123,16 @@ async def menu_process(msg:Message, state:FSMContext):
     first_meal=data['first_meal']
     count_days=data['days_amount']
     last_meal=data['last_meal']
-    row=[[InlineKeyboardButton(text='Овсянка и бутер с сыром', callback_data='B1')],[InlineKeyboardButton(text='Пшенка с ковбаськой', callback_data='B2')]]
+    records=MenuTable.get_menu_all(Database.get_connection())
+    feednames=[]
+    feednames_dict={}
+    for record in records:
+        if record['feedname'] not in feednames:
+            feednames.append(record['feedname'])
+            feednames_dict[record['feedname']]=record['feedtype']
+    row=[]
+    for name in feednames:
+        row.append([InlineKeyboardButton(text=name, callback_data=feednames_dict[name])])
     mrkp=InlineKeyboardMarkup(inline_keyboard=row)
     
     meals_count=0

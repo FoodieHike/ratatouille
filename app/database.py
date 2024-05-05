@@ -203,7 +203,14 @@ class MenuTable:
                 ), (feedtype,)
             )
             return cursor.fetchall()
-
+    @staticmethod
+    def get_menu_all(conn):
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                'SELECT * FROM menu'
+            )
+            return cursor.fetchall()
+        
     
     
     
