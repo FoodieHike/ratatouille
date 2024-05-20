@@ -3,47 +3,34 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
 
-
-import psycopg2
-import database, models
-from starlette.middleware.wsgi import WSGIMiddleware
-
-from config import CONN_PARAMS
-from admin import app as flask_app
+import models
+import new_db_tests
 
 
-
-
-
-
-
-#Создаем приложение и интегрируем к нему фласк админскую приложуху
+# Создаем приложение и интегрируем к нему фласк админскую приложуху
 app = FastAPI()
 
-templates= Jinja2Templates(directory='templates')
+templates = Jinja2Templates(directory='templates')
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.mount('/administration/', WSGIMiddleware(flask_app))
 
-
-
+# эндпоинт для наполнения таблицы campaign
 @app.post("/campaign/", response_model=models.Campaign)
-async def create_campaign(campaign: models.CampaignCreate):       #эндпоинт для наполнения таблицы campaign
-    conn = database.get_connection()
-    try:
-        new_campaign = database.create_campaign(conn, campaign)
-        if new_campaign:
-            return new_campaign
-        raise HTTPException(status_code=404, detail='Not found')
-    finally:
-        conn.close()
+async def create_campaign(campaign: models.CampaignCreate):
+    new_campaign = await new_db_tests.create_campaign(campaign)
+    if new_campaign:
+        return new_campaign
+    raise HTTPException(status_code=404, detail='Not found')
+
 
 @app.get('/')
-async def read_root(request:Request):
-    return templates.TemplateResponse('main.html', {'request':request})
+async def read_root(request: Request):
+    return templates.TemplateResponse('main.html', {'request': request})
 
 
 @app.get('/admin/')
-async def admin(request:Request):
-    return templates.TemplateResponse('fastapi_index.html', {'request':request})
+async def admin(request: Request):
+    return templates.TemplateResponse(
+        'fastapi_index.html', {'request': request}
+    )

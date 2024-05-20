@@ -2,8 +2,8 @@ CREATE TABLE Campaign (
   ID SERIAL PRIMARY KEY,
   Startdate DATE,
   Enddate DATE,
-  Firstfood VARCHAR(255),
-  Lastfood VARCHAR(255),
+  Firstfood INT,
+  Lastfood INT,
   User_tg_id INT
 );
 

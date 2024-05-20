@@ -8,9 +8,8 @@ from aiogram.enums.parse_mode import ParseMode
 from psycopg2.errors import InvalidTextRepresentation
 
 
+import new_db_tests
 import utils
-import models
-from database import UsersTable, Database, BotCampaignTable
 from camp_bot_models import DBCreateContext, UserRegistration, ShowStates
 
 from dotenv import load_dotenv
@@ -64,273 +63,204 @@ async def start_handler(msg: Message, state: FSMContext):
 
 
 # хэндлеры для команды create:
-
 # альтернативный обработчик под встроенную кнопку:
 @routerCampaign.callback_query(lambda cb: cb.data == 'create')
-async def create_inline_handler(qry: CallbackQuery, state: FSMContext):
+async def create_inline_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+        chat_id=query.message.chat.id, message_id=query.message.message_id
     )
     try:
-        user = UsersTable(Database.get_connection())
-        user = user.table_users_check(uid=qry.from_user.id)
+        user = await new_db_tests.users_check(tguid=query.from_user.id)
         if user:
             mrkp = utils.months_creator(4)
-            await qry.message.answer(
+            await query.message.answer(
                 'Выберите месяц для похода:', reply_markup=mrkp
             )
-            await qry.answer('Будет создана новая запись')
+            await query.answer('Будет создана новая запись')
             await state.set_state(DBCreateContext.wait_for_startdate_one)
         else:
-            await qry.message.answer(
+            await query.message.answer(
                 '''Добро пожаловать в бот! Пропишите имя пользователя
                     для использования нашего функционала:'''
             )
             await state.set_state(UserRegistration.register)
     except Exception as e:
-        await qry.message.answer(f'Exception in command camp!!!\n{e}')
-
-
-# Обработчик начальной команды для взаимодействий с таблицей походов
-@routerCampaign.message(Command('create'))
-async def create_camp_handler(msg: Message, state: FSMContext):
-    await state.clear()
-    try:
-        user = UsersTable(Database.get_connection())
-        user = user.table_users_check(uid=msg.from_user.id)
-        if user:
-            mrkp = utils.months_creator(4)
-            await msg.answer('Выберите месяц для похода:', reply_markup=mrkp)
-            await state.set_state(DBCreateContext.wait_for_startdate_one)
-        else:
-            await msg.answer(
-                '''Добро пожаловать в бот! Пропишите имя пользователя
-                    для использования нашего функционала:'''
-            )
-            await state.set_state(UserRegistration.register)
-    except Exception as e:
-        await msg.answer(f'Exception in create_camp_handler!!!\n{e}')
+        await query.message.answer(f'Exception in command camp!!!\n{e}')
 
 
 # Создание нового пользователя (сработает, если чекер не найдет его в таблице)
 @routerCampaign.message(UserRegistration.register)
-async def registration_handler(msg: Message, state: FSMContext):
-    data = {'name': msg.text}
+async def registration_handler(message: Message, state: FSMContext):
+    data = {'name': message.text}
     # заглушка для пароля (пока хз, зачем он)
     passgen = ''.join(
-        [str(msg.from_user.full_name), '_', str(msg.from_user.id)[-4:]]
+        [str(message.from_user.full_name), '_', str(message.from_user.id)[-4:]]
     )
-    creation = UsersTable(Database.get_connection())
-    creation.create_user_bot_auto(
-        password=passgen, tgid=msg.from_user.id, user=data
+    await new_db_tests.create_user(
+        name=data['name'], password=passgen, tguid=message.from_user.id
     )
-    await msg.answer(
-        f'отлично, {msg.text}, теперь можно приступить к записи похода'
-    )
-    mrkp = utils.months_creator(4)
-    await msg.answer('Выберите месяц для похода:', reply_markup=mrkp)
-    await state.set_state(DBCreateContext.wait_for_startdate_one)
-
-
-# Обработчик для ввода startdate  первый
-@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_one)
-async def process_startdate(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
-    )
-    try:
-        month = int(qry.data)
-        year = datetime.now()
-        year = year.strftime('%Y')
-        markup = utils.calendar(year, month)
-        await qry.message.answer(text='Выберите дату:', reply_markup=markup)
-    except Exception as e:
-        await qry.message.answer(
-            f'Произошла чудовищная ошибка в process_startdate!\n{e}'
+    user = await new_db_tests.users_check(tguid=message.from_user.id)
+    if user:
+        await message.answer(
+            f'отлично, {message.text}, теперь можно приступить к записи похода'
         )
-    else:
-        await state.set_state(DBCreateContext.wait_for_startdate_two)
+        # входная точка для создания записи вы бд
+        mrkp = utils.months_creator(4)
+        await message.answer('Выберите месяц для похода:', reply_markup=mrkp)
+        await state.set_state(DBCreateContext.wait_for_startdate_one)
+
+
+# тест новой библиотеки на боте
+@routerCampaign.message(Command('create'))
+async def camp_create_handler(message: Message, state: FSMContext):
+    try:
+        user = await new_db_tests.users_check(tguid=message.from_user.id)
+        if user:
+            mrkp = utils.months_creator(4)
+            await message.answer(
+                'Выберите месяц для похода:', reply_markup=mrkp
+            )
+            await message.answer('Будет создана новая запись')
+            await state.set_state(DBCreateContext.wait_for_startdate_one)
+        else:
+            await message.answer(
+                '''Добро пожаловать в бот! Пропишите имя пользователя
+                    для использования нашего функционала:'''
+            )
+            await state.set_state(UserRegistration.register)
+    except Exception as e:
+        await message.answer(f'Exception in command camp!!!\n{e}')
+
+
+@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_one)
+async def process_startdate(query: CallbackQuery, state: FSMContext):
+    month = int(query.data)
+    year = datetime.now()
+    year = year.strftime('%Y')
+    markup = utils.calendar(year, month)
+    await query.message.answer(text='Выберите дату:', reply_markup=markup)
+    await state.set_state(DBCreateContext.wait_for_startdate_two)
 
 
 # Обработчик для ввода startdate второй
 @routerCampaign.callback_query(DBCreateContext.wait_for_startdate_two)
-async def process_startdate_second(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+async def process_startdate_second(query: CallbackQuery, state: FSMContext):
+    await query.message.answer(f'Дата начала похода:\n{query.data}')
+    await state.set_data({'startdate': query.data})
+# открываем новый календарь для следующей даты
+    mrkp = utils.months_creator(4)
+    await query.message.answer(
+        'Выберите месяц окончания похода:', reply_markup=mrkp
     )
-    try:
-        # валидируем дату и закидываем в хранилище данных состояний
-        if qry.data < today:
-            raise ValueError
-        else:
-            await qry.message.answer(f'Дата начала похода:\n{qry.data}')
-            await state.set_data({'startdate': qry.data})
-
-        # открываем новый календарь для следующей даты
-            mrkp = utils.months_creator(4)
-            await qry.message.answer(
-                'Выберите месяц окончания похода:', reply_markup=mrkp
-            )
-
-    # Обработчики ошибок
-    except ValueError:
-        mrkp = utils.months_creator(4)
-        await qry.message.answer(
-            '''Введенная дата должна быть не ранее сегодняшнего дня!\n
-            Введите корректную дату:''', reply_markup=mrkp
-        )
-        await state.set_state(DBCreateContext.wait_for_startdate_one)
-    else:
-        await state.set_state(DBCreateContext.wait_for_enddate_one)
+    await state.set_state(DBCreateContext.wait_for_enddate_one)
 
 
 # обработчик для enddate первый
 @routerCampaign.callback_query(DBCreateContext.wait_for_enddate_one)
-async def process_enddate(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+async def process_enddate(query: CallbackQuery, state: FSMContext):
+    month = int(query.data)
+    year = datetime.now()
+    year = year.strftime('%Y')
+    markup = utils.calendar(year, month)
+    await query.message.answer(
+        text='Выберите дату окончания похода:', reply_markup=markup
     )
-    try:
-        month = int(qry.data)
-        year = datetime.now()
-        year = year.strftime('%Y')
-        markup = utils.calendar(year, month)
-        await qry.message.answer(
-            text='Выберите дату окончания похода:', reply_markup=markup
-        )
-    except Exception as e:
-        await qry.message.answer(
-            f'Произошла чудовищная ошибка в process_enddate!\n{e}'
-        )
-    else:
-        await state.set_state(DBCreateContext.wait_for_enddate_two)
+    await state.set_state(DBCreateContext.wait_for_enddate_two)
 
 
 # обработчик для enddate второй
 @routerCampaign.callback_query(DBCreateContext.wait_for_enddate_two)
-async def process_enddate_second(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+async def process_enddate_second(query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await query.message.answer(f'Дата окончания:\n{query.data}')
+    data['enddate'] = query.data
+    await state.set_data(data)
+    row = [
+        InlineKeyboardButton(text='Завтрак', callback_data='1'),
+        InlineKeyboardButton(text='Обед', callback_data='2'),
+        InlineKeyboardButton(text='Ужин', callback_data='3')
+    ]
+    rows = [row]
+    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+    await query.message.answer(
+        'Введите первый прием пищи:', reply_markup=mrkp
     )
-    try:
-        data = await state.get_data()
-        if data['startdate'] > qry.data:
-            raise ValueError
-        else:
-            await qry.message.answer(f'Дата окончания:\n{qry.data}')
-            data = await state.get_data()
-            data['enddate'] = qry.data
-            await state.set_data(data)
-    except ValueError:
-        mrkp = utils.months_creator(4)
-        await qry.message.answer(
-            '''Введенная дата должна быть позже введенной даты начала похода!\n
-            Введите корректную дату:''', reply_markup=mrkp
-        )
-        await state.set_state(DBCreateContext.wait_for_enddate_one)
-    else:
-        row = [
-            InlineKeyboardButton(text='Завтрак', callback_data='1'),
-            InlineKeyboardButton(text='Обед', callback_data='2'),
-            InlineKeyboardButton(text='Ужин', callback_data='3')
-        ]
-        rows = [row]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
-        await qry.message.answer(
-            'Введите первый прием пищи:', reply_markup=mrkp
-        )
-        await state.set_state(DBCreateContext.wait_for_firstfood)
+    await state.set_state(DBCreateContext.wait_for_firstfood)
 
 
 # Обработчик для ввода firstfood
 @routerCampaign.callback_query(DBCreateContext.wait_for_firstfood)
-async def process_firstfood(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+async def process_firstfood(query: CallbackQuery, state: FSMContext):
+    # Получаем текущие данные
+    data = await state.get_data()
+    data['firstfood'] = int(query.data)
+    await state.set_data(data)
+    row = [
+        InlineKeyboardButton(text='Завтрак', callback_data='1'),
+        InlineKeyboardButton(text='Обед', callback_data='2'),
+        InlineKeyboardButton(text='Ужин', callback_data='3')
+    ]
+    rows = [row]
+    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+    await query.message.answer(
+        'Введите последний прием пищи:', reply_markup=mrkp
     )
-    try:
-        models.FeedType(qry.data)
-    except Exception as e:
-        await qry.message.answer(
-            f'Произошла чудовищная ошибка в process_firstfood:\n{e}'
-        )
-    else:
-        # Получаем текущие данные
-        data = await state.get_data()
-        data['firstfood'] = qry.data
-        await state.set_data(data)
-        row = [
-            InlineKeyboardButton(text='Завтрак', callback_data='1'),
-            InlineKeyboardButton(text='Обед', callback_data='2'),
-            InlineKeyboardButton(text='Ужин', callback_data='3')
-        ]
-        rows = [row]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
-        await qry.message.answer(
-            'Введите последний прием пищи:', reply_markup=mrkp
-        )
-        await state.set_state(DBCreateContext.wait_for_lastfood)
+    await state.set_state(DBCreateContext.wait_for_lastfood)
 
 
 # Обработчик для ввода lastfood
 @routerCampaign.callback_query(DBCreateContext.wait_for_lastfood)
-async def process_lastfood(qry: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+async def process_lastfood(query: CallbackQuery, state: FSMContext):
+    # Получаем текущие данные
+    data = await state.get_data()
+    data['lastfood'] = int(query.data)
+    data['startdate'] = datetime.strptime(data['startdate'], '%Y-%m-%d')
+    data['enddate'] = datetime.strptime(data['enddate'], '%Y-%m-%d')
+    await state.set_data(data)
+    record = await new_db_tests.create_campaign_bot(
+        campaign=data, tguid=query.from_user.id
     )
-    try:
-        models.FeedType(qry.data)
-    except Exception as e:
-        await qry.message.answer(f'We got an exception here:\n{e}')
-    else:
-        # Получаем текущие данные
-        data = await state.get_data()
-        data['lastfood'] = qry.data
-        await state.set_data(data)
-        creation = BotCampaignTable(Database.get_connection())
-        creation.create_campaign(campaign=data, u_id=qry.from_user.id)
-        response = creation.get_campaign_last(qry.from_user.id)
 
-        # определяем длину похода
-        lenght = utils.callback_date_converter(
-            data['enddate']
-        )-utils.callback_date_converter(data['startdate'])
-        lenght = lenght.days+1
-        btn = [
-            [InlineKeyboardButton(
-                text='Выйти в меню',
-                callback_data='menu_button'
-            )],
-            [InlineKeyboardButton(
-                text='Заполнить меню для похода',
-                callback_data='food_menu_button'
-            )]
-        ]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-        if str(lenght).endswith('1'):
-            await qry.message.answer(
-                f'''Спасибо, данные у меня.\n
-                Длительность похода составляет {lenght} день.\n
-                ID Вашей записи - {response["id"]}''', reply_markup=mrkp
-            )
-        elif str(lenght).endswith('2') or str(lenght).endswith('3') or str(lenght).endswith('4'):
-            await qry.message.answer(
-                f'''Спасибо, данные у меня.\n
-                Длительность похода составляет {lenght} дня.\n
-                ID Вашей записи - {response["id"]}''', reply_markup=mrkp
-            )
-        else:
-            await qry.message.answer(
-                f'''Спасибо, данные у меня.\n
-                Длительность похода составляет {lenght} дней.\n
-                ID Вашей записи - {response["id"]}''', reply_markup=mrkp
-            )
-        await state.clear()
+    # определяем длину похода
+    lenght = data['enddate'] - data['startdate']
+    lenght = lenght.days+1
+    btn = [
+        [InlineKeyboardButton(
+            text='Выйти в меню',
+            callback_data='menu_button'
+        )],
+        [InlineKeyboardButton(
+            text='Заполнить меню для похода',
+            callback_data='food_menu_button'
+        )]
+    ]
+    mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
+    if str(lenght).endswith('1'):
+        await query.message.answer(
+            f'''Спасибо, данные у меня.\n
+            Длительность похода составляет {lenght} день.\n
+            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+        )
+    elif (
+        str(lenght).endswith('2')
+        or str(lenght).endswith('3')
+        or str(lenght).endswith('4')
+    ):
+        await query.message.answer(
+            f'''Спасибо, данные у меня.\n
+            Длительность похода составляет {lenght} дня.\n
+            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+        )
+    else:
+        await query.message.answer(
+            f'''Спасибо, данные у меня.\n
+            Длительность похода составляет {lenght} дней.\n
+            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+        )
+    await state.clear()
 
 
 # Обработчики команды show для просмотра данных из бд:
-
-
 # альтернативный обработчик под встроенную кнопку:
 @routerCampaign.callback_query(lambda cb: cb.data == 'show')
 async def show_inline_handler(qry: CallbackQuery, state: FSMContext):
@@ -370,13 +300,12 @@ async def get_camp_handler(msg: Message, state: FSMContext):
 
 # хэндлер для выведения всех записей:
 @routerCampaign.callback_query(lambda cb: cb.data == 'all')
-async def show_all_handler(qry: CallbackQuery):
+async def show_all_handler(query: CallbackQuery):
     try:
         await bot.delete_message(
-            chat_id=qry.message.chat.id, message_id=qry.message.message_id
+            chat_id=query.message.chat.id, message_id=query.message.message_id
         )
-        response = BotCampaignTable(Database.get_connection())
-        response = response.get_campaign_all(uid=str(qry.from_user.id))
+        response = new_db_tests.get_campaign_all(tguid=query.from_user.id)
         if response:
             records = []
             count = 0
@@ -416,45 +345,44 @@ async def show_all_handler(qry: CallbackQuery):
                 text='Выйти в меню', callback_data='menu_button'
             )]]
             mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-            await qry.message.answer(
+            await query.message.answer(
                 'Ваши данные:\n'+'\n'.join(records), reply_markup=mrkp)
         else:
             btn = [[InlineKeyboardButton(
                 text='Выйти в меню', callback_data='menu_button')]]
             mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-            await qry.message.answer(
+            await query.message.answer(
                 'У Вас пока нет записей, но можете их создать:',
                 reply_markup=mrkp)
     except Exception as e:
-        await qry.message.answer(f'Exception!!!\n{e.args}')
+        await query.message.answer(f'Exception!!!\n{e.args}')
 
 
 # хэндлер для выведения конкретной записи:
 @routerCampaign.callback_query(lambda cb: cb.data == 'current')
-async def show_current_handler(qry: CallbackQuery, state: FSMContext):
+async def show_current_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id)
-    response = BotCampaignTable(Database.get_connection())
-    response = response.get_campaign_all(uid=str(qry.from_user.id))
+        chat_id=query.message.chat.id, message_id=query.message.message_id)
+    response = new_db_tests.get_campaign_all(tguid=query.from_user.id)
     if response:
-        await qry.message.answer('Введите ID записи:')
+        await query.message.answer('Введите ID записи:')
         await state.set_state(ShowStates.putID)
     else:
         btn = [[InlineKeyboardButton(
             text='Выйти в меню', callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-        await qry.message.answer(
+        await query.message.answer(
             'У Вас пока нет записей, но можете их создать:',
             reply_markup=mrkp)
 
 
 # хэндлер для выведения конкретной записи (второй):
 @routerCampaign.message(ShowStates.putID)
-async def show_current_process(msg: Message, state: FSMContext):
+async def show_current_process(message: Message, state: FSMContext):
     try:
-        response = BotCampaignTable(Database.get_connection())
-        response = response.get_campaign_by_id(
-            uid=msg.from_user.id, record_id=msg.text)
+        response = new_db_tests.get_campaign_by_id(
+            tguid=message.from_user.id, record_id=message.text
+        )
         firstfood = response['firstfood']
         lastfood = response['lastfood']
         if firstfood == '1':
@@ -473,20 +401,22 @@ async def show_current_process(msg: Message, state: FSMContext):
         btn = [[InlineKeyboardButton(
             text='Выйти в меню', callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-        await msg.answer(f'''Ваша запись:\n
-                         дата начала похода - {response['startdate']}\n
-                         дата окончания похода -  {response['enddate']}\n
-                         первый прием пищи - {res}\n
-                         последний прием пищи - {res_s}''',
-                         reply_markup=mrkp)
+        await message.answer(
+            f'''Ваша запись:\n
+            дата начала похода - {response['startdate']}\n
+            дата окончания похода -  {response['enddate']}\n
+            первый прием пищи - {res}\n
+            последний прием пищи - {res_s}''',
+            reply_markup=mrkp
+        )
     except TypeError:
-        await msg.answer('Такой в ваших записях нет. Попробуйте другой id')
+        await message.answer('Такой в ваших записях нет. Попробуйте другой id')
     except ValueError:
-        await msg.answer('''Неправильная форма записи!\n
+        await message.answer('''Неправильная форма записи!\n
                          Введите пожалуйста,
                          корректный id (натуральное число):''')
     except InvalidTextRepresentation:
-        await msg.answer('''Неправильная форма записи!\n
+        await message.answer('''Неправильная форма записи!\n
                          Введите, пожалуйста,
                          корректный ID (натуральное число).''')
     else:

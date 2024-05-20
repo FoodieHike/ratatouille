@@ -2,25 +2,33 @@ from pydantic import BaseModel
 from datetime import date
 from enum import Enum
 
-class FeedType(str, Enum):      #Модель для валидации приемов пищи
-    breakfast='1'
-    lunch='2'
-    dinner='3'
+
+# Модель для валидации приемов пищи
+class FeedType(str, Enum):
+    breakfast = '1'
+    lunch = '2'
+    dinner = '3'
 
 
-class CampaignBase(BaseModel):      #базовая модель для валидации записей пользователя
+# базовая модель для валидации записей пользователя
+class CampaignBase(BaseModel):
     startdate: date
     enddate: date
     firstfood: FeedType
     lastfood: FeedType
 
-class CampaignCreate(CampaignBase):     #модель для валиации взаимодейтвия с пользователем и записи данных в бд (тута будем добавлять всякое)
+
+# модель для валиации взаимодейтвия с пользователем и записи данных в бд
+# (тута будем добавлять всякое)
+class CampaignCreate(CampaignBase):
     pass
 
-class Campaign(CampaignBase):       #модель для доставания записей из campaign
+
+# модель для доставания записей из campaign
+class Campaign(CampaignBase):
     id: int
 
 
 class UserReg(BaseModel):
-    name:str
-    password:str
+    name: str
+    password: str
