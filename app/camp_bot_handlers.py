@@ -8,7 +8,7 @@ from aiogram.enums.parse_mode import ParseMode
 from psycopg2.errors import InvalidTextRepresentation
 
 
-import new_db_tests
+import database
 import utils
 from camp_bot_models import DBCreateContext, UserRegistration, ShowStates
 
@@ -70,7 +70,7 @@ async def create_inline_handler(query: CallbackQuery, state: FSMContext):
         chat_id=query.message.chat.id, message_id=query.message.message_id
     )
     try:
-        user = await new_db_tests.users_check(tguid=query.from_user.id)
+        user = await database.users_check(tguid=query.from_user.id)
         if user:
             mrkp = utils.months_creator(4)
             await query.message.answer(
@@ -80,7 +80,7 @@ async def create_inline_handler(query: CallbackQuery, state: FSMContext):
             await state.set_state(DBCreateContext.wait_for_startdate_one)
         else:
             await query.message.answer(
-                '''Добро пожаловать в бот! Пропишите имя пользователя
+                '''Добро пожаловать в бот! Пропишите имя пользователя\
                     для использования нашего функционала:'''
             )
             await state.set_state(UserRegistration.register)
@@ -96,10 +96,10 @@ async def registration_handler(message: Message, state: FSMContext):
     passgen = ''.join(
         [str(message.from_user.full_name), '_', str(message.from_user.id)[-4:]]
     )
-    await new_db_tests.create_user(
+    await database.create_user(
         name=data['name'], password=passgen, tguid=message.from_user.id
     )
-    user = await new_db_tests.users_check(tguid=message.from_user.id)
+    user = await database.users_check(tguid=message.from_user.id)
     if user:
         await message.answer(
             f'отлично, {message.text}, теперь можно приступить к записи похода'
@@ -114,7 +114,7 @@ async def registration_handler(message: Message, state: FSMContext):
 @routerCampaign.message(Command('create'))
 async def camp_create_handler(message: Message, state: FSMContext):
     try:
-        user = await new_db_tests.users_check(tguid=message.from_user.id)
+        user = await database.users_check(tguid=message.from_user.id)
         if user:
             mrkp = utils.months_creator(4)
             await message.answer(
@@ -217,7 +217,7 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
     data['startdate'] = datetime.strptime(data['startdate'], '%Y-%m-%d')
     data['enddate'] = datetime.strptime(data['enddate'], '%Y-%m-%d')
     await state.set_data(data)
-    record = await new_db_tests.create_campaign_bot(
+    record = await database.create_campaign_bot(
         campaign=data, tguid=query.from_user.id
     )
 
@@ -305,7 +305,7 @@ async def show_all_handler(query: CallbackQuery):
         await bot.delete_message(
             chat_id=query.message.chat.id, message_id=query.message.message_id
         )
-        response = new_db_tests.get_campaign_all(tguid=query.from_user.id)
+        response = database.get_campaign_all(tguid=query.from_user.id)
         if response:
             records = []
             count = 0
@@ -363,7 +363,7 @@ async def show_all_handler(query: CallbackQuery):
 async def show_current_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id)
-    response = new_db_tests.get_campaign_all(tguid=query.from_user.id)
+    response = database.get_campaign_all(tguid=query.from_user.id)
     if response:
         await query.message.answer('Введите ID записи:')
         await state.set_state(ShowStates.putID)
@@ -380,7 +380,7 @@ async def show_current_handler(query: CallbackQuery, state: FSMContext):
 @routerCampaign.message(ShowStates.putID)
 async def show_current_process(message: Message, state: FSMContext):
     try:
-        response = new_db_tests.get_campaign_by_id(
+        response = database.get_campaign_by_id(
             tguid=message.from_user.id, record_id=message.text
         )
         firstfood = response['firstfood']

@@ -8,7 +8,7 @@ from aiogram.fsm.state import StatesGroup, State
 from psycopg2.errors import InvalidTextRepresentation
 
 
-from database import Database, BotCampaignTable, MenuTable
+import database
 import utils
 import pdf_creator
 from camp_bot_handlers import bot
@@ -29,7 +29,7 @@ class ChooseIDStates(StatesGroup):
 
 # хэндлер для начала работы с меню
 @routerMenu.callback_query(lambda cb: cb.data == 'food_menu_button')
-async def callback_menu_handller(qry: CallbackQuery, state: FSMContext):
+async def callback_menu_handller(query: CallbackQuery, state: FSMContext):
     row = [[InlineKeyboardButton(
         text='Выбрать по ID', callback_data='chooseID'
     )],
@@ -37,7 +37,7 @@ async def callback_menu_handller(qry: CallbackQuery, state: FSMContext):
                text='Последняя запись', callback_data='lastone'
            )]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await qry.message.answer(
+    await query.message.answer(
         '''Меню для конкретного похода,
         или возьмем последнюю запись?''', reply_markup=mrkp
     )
@@ -62,24 +62,23 @@ async def menu_handller(msg: Message, state: FSMContext):
 
 # первый
 @routerMenu.callback_query(lambda cb: cb.data == 'chooseID')
-async def id_for_meny_hsndler(qry: CallbackQuery, state: FSMContext):
+async def id_for_meny_hsndler(query: CallbackQuery, state: FSMContext):
     await state.clear()
-    await qry.message.answer('Напишите ID записи похода:')
-    await qry.message.edit_reply_markup(reply_markup=None)
+    await query.message.answer('Напишите ID записи похода:')
+    await query.message.edit_reply_markup(reply_markup=None)
     await state.set_state(ChooseIDStates.wait_for_id)
 
 
 # хэндлер для выбора записи по ID (второй)
 @routerMenu.message(ChooseIDStates.wait_for_id)
-async def choose_id_handler(msg: Message, state: FSMContext):
+async def choose_id_handler(message: Message, state: FSMContext):
     try:
-        record = BotCampaignTable(Database.get_connection())
-        record = record.get_campaign_by_id(
-            uid=msg.from_user.id, record_id=msg.text
+        record = database.get_campaign_by_id(
+            tguid=message.from_user.id, record_id=message.text
         )
         lenght = record['enddate']-record['startdate']
     except TypeError:
-        await msg.answer('У вас пока нет записей')
+        await message.answer('У вас пока нет записей')
     else:
         await state.set_data({'days_amount': lenght.days+1})
         data = await state.get_data()
@@ -110,7 +109,7 @@ async def choose_id_handler(msg: Message, state: FSMContext):
         data['extra_meal'] = extra_meal
         await state.set_data(data)
 
-        await msg.answer('На сколько человек планируете поход?')
+        await message.answer('На сколько человек планируете поход?')
         await state.set_state(ChooseIDStates.wait_for_people_amount)
 
 
@@ -132,7 +131,7 @@ async def menu_process(msg: Message, state: FSMContext):
     first_meal = data['first_meal']
     count_days = data['days_amount']
     last_meal = data['last_meal']
-    records = MenuTable.get_menu_all(Database.get_connection())
+    records = database.get_menu_all()
     feednames = []
     feednames_dict = {}
     for record in records:
@@ -195,11 +194,10 @@ async def menu_process(msg: Message, state: FSMContext):
 
 # хэндлер для предоставления последней записи
 @routerMenu.callback_query(lambda cb: cb.data == 'lastone')
-async def menu_last_writing_handler(qry: CallbackQuery, state: FSMContext):
+async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
     await state.clear()
     try:
-        record = BotCampaignTable(Database.get_connection())
-        record = record.get_campaign_last(qry.from_user.id)
+        record = database.get_campaign_last(tguid=query.from_user.id)
         # определяем длительность похода
         lenght = record['enddate']-record['startdate']
 
@@ -210,17 +208,17 @@ async def menu_last_writing_handler(qry: CallbackQuery, state: FSMContext):
             text='Вернуться в меню', callback_data='menu_button'
         )]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-        await qry.message.answer(
+        await query.message.answer(
             '''К сожалению не удалось найти ни одной
                 записи. Может хотите создать новую?''', reply_markup=mrkp
         )
     except ValueError:
-        await qry.message.answer(
+        await query.message.answer(
             '''Неправильная форма записи!
             \nВведите пожалуйста корректный id (натуральное число):'''
         )
     except InvalidTextRepresentation:
-        await qry.message.answer(
+        await query.message.answer(
             '''Неправильная форма записи!
             \nВведите, пожалуйста, корректный ID (натуральное число).'''
         )
@@ -252,17 +250,15 @@ async def menu_last_writing_handler(qry: CallbackQuery, state: FSMContext):
         data['extra_meal'] = extra_meal
         await state.set_data(data)
 
-        await qry.message.answer('На сколько человек планируете поход?')
+        await query.message.answer('На сколько человек планируете поход?')
         await state.set_state(ChooseIDStates.wait_for_people_amount)
 
 
 # хэндлер для обработки кнопок составления еды
 @routerMenu.callback_query(lambda cb: cb.data.startswith('B'))
-async def feedtype_b1_handler(qry: CallbackQuery, state: FSMContext):
+async def feedtype_b1_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-
-    record = MenuTable(Database.get_connection())
-    record = record.get_menu(qry.data)
+    record = database.get_menu(feedtype=query.data)
     full_list = []
     meal_name = False
     # формируем сообщение с нужными пропорциями еды
@@ -279,7 +275,7 @@ async def feedtype_b1_handler(qry: CallbackQuery, state: FSMContext):
     res = '\n'.join(full_list)
     # достаем информацию о дне и приеме пище
     # (в словаре состояний под номером id сообщения со встроенной кнопкой)
-    crude_row = data[''.join(['msg_id', str(qry.message.message_id)])]
+    crude_row = data[''.join(['msg_id', str(query.message.message_id)])]
     day, meal = crude_row.split('$')       # распределяем по переменным
 
     # формирование списка продуктов и счетчика меню
@@ -298,9 +294,9 @@ async def feedtype_b1_handler(qry: CallbackQuery, state: FSMContext):
     data[products_list] = meal_products
     # работа с удалением сообщения и записи в словаре
     await bot.delete_message(
-        chat_id=qry.message.chat.id, message_id=qry.message.message_id
+        chat_id=query.message.chat.id, message_id=query.message.message_id
     )
-    del data[''.join(['msg_id', str(qry.message.message_id)])]
+    del data[''.join(['msg_id', str(query.message.message_id)])]
     await state.set_data(data)
 
     found_key = False
@@ -325,7 +321,7 @@ async def feedtype_b1_handler(qry: CallbackQuery, state: FSMContext):
         for index in range(len(records_list)):
             records_list[index] = data[records_list[index]]
 
-        await qry.message.answer('Формируем pdf и отправляем...')
+        await query.message.answer('Формируем pdf и отправляем...')
 
         # конвертируем данные для общего подсчета и считаем
         total_data = '\n'.join(records_list)
@@ -333,8 +329,10 @@ async def feedtype_b1_handler(qry: CallbackQuery, state: FSMContext):
 
         # создание файлика
         pdf_creator.pdf_creation(
-            *records_list, filename=qry.from_user.id,
+            *records_list, filename=query.from_user.id,
             startdate=data['startdate'], enddate=data['enddate'], total=total
         )
-        pdf_file = FSInputFile(f'/pdf_files/hike_menu_{qry.from_user.id}.pdf')
-        await qry.message.answer_document(pdf_file)
+        pdf_file = FSInputFile(
+            f'/pdf_files/hike_menu_{query.from_user.id}.pdf'
+        )
+        await query.message.answer_document(pdf_file)

@@ -3,7 +3,7 @@ version: '3'
 services:
   app:
     build: .
-    command: ["/db_wait.sh", "db", "/start.sh"]
+    command: uvicorn main:app --host 0.0.0.0 --port 80 --reload
     volumes:
       - ./app:/app
     ports:
@@ -17,6 +17,17 @@ services:
       POSTGRES_DB: food_db
     env_file:
       - .env
+  bot:
+    build: .
+    command: python bot_main.py
+    volumes:
+      - ./app:/app
+    depends_on:
+      - db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: food_db
   db:
     image: postgres
     restart: always
@@ -25,7 +36,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: food_db
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - ./create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
