@@ -16,10 +16,6 @@ from camp_bot_handlers import bot
 routerMenu = Router()
 
 
-'''class MenuStates(StatesGroup):
-    wait_for_people_amount = State()'''
-
-
 class ChooseIDStates(StatesGroup):
     wait_for_id = State()
     wait_for_people_amount = State()
@@ -131,7 +127,7 @@ async def menu_process(msg: Message, state: FSMContext):
     first_meal = data['first_meal']
     count_days = data['days_amount']
     last_meal = data['last_meal']
-    records = database.get_menu_all()
+    records = await database.get_menu_all()
     feednames = []
     feednames_dict = {}
     for record in records:
@@ -197,7 +193,7 @@ async def menu_process(msg: Message, state: FSMContext):
 async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
     await state.clear()
     try:
-        record = database.get_campaign_last(tguid=query.from_user.id)
+        record = await database.get_campaign_last(tguid=query.from_user.id)
         # определяем длительность похода
         lenght = record['enddate']-record['startdate']
 
@@ -230,16 +226,16 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
         data['startdate'] = record['startdate']
         data['enddate'] = record['enddate']
 
-        if record['firstfood'] == '1':
+        if record['firstfood'] == 1:
             firstday_feed_amount = 3
-        elif record['firstfood'] == '2':
+        elif record['firstfood'] == 2:
             firstday_feed_amount = 2
         else:
             firstday_feed_amount = 1
 
-        if record['lastfood'] == '1':
+        if record['lastfood'] == 1:
             lastday_feed_amount = 1
-        elif record['lastfood'] == '2':
+        elif record['lastfood'] == 2:
             lastday_feed_amount = 2
         else:
             lastday_feed_amount = 3
@@ -258,7 +254,7 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 @routerMenu.callback_query(lambda cb: cb.data.startswith('B'))
 async def feedtype_b1_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    record = database.get_menu(feedtype=query.data)
+    record = await database.get_menu(feedtype=query.data)
     full_list = []
     meal_name = False
     # формируем сообщение с нужными пропорциями еды

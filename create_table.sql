@@ -1,13 +1,13 @@
-CREATE TABLE Campaign (
+CREATE TABLE Campaigns (
   ID SERIAL PRIMARY KEY,
-  Startdate DATE,
-  Enddate DATE,
-  Firstfood INT,
-  Lastfood INT,
-  User_tg_id INT
+  startdate DATE,
+  enddate DATE,
+  firstfood INT,
+  lastfood INT,
+  user_tg_id INT
 );
 
-INSERT INTO Campaign (StartDate, Enddate, Firstfood, Lastfood) VALUES ('2024-12-01', '2024-12-31', '1', '2');
+INSERT INTO Campaigns (StartDate, Enddate, Firstfood, Lastfood) VALUES ('2024-12-01', '2024-12-31', '1', '2');
 
 CREATE TABLE Users (
   ID SERIAL PRIMARY KEY,
@@ -16,14 +16,14 @@ CREATE TABLE Users (
   tg_id INT
 );
 
-INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'John_Doe_1488', '001');
+INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'somepass', '001');
 
 CREATE TABLE People (
   ID INT PRIMARY KEY,
   campaign_ID INT,
   FIO VARCHAR(255),
   foodpreferences VARCHAR(255),
-  FOREIGN KEY (campaign_ID) REFERENCES Campaign(ID)
+  FOREIGN KEY (campaign_ID) REFERENCES Campaigns(ID)
 );
 
 CREATE TABLE Product (
@@ -33,9 +33,9 @@ CREATE TABLE Product (
 
 CREATE TABLE Menu (
   ID INT PRIMARY KEY,
-  FeedType VARCHAR(255),
-  FeedName VARCHAR(255),
-  ProductName VARCHAR(255),
+  feedType VARCHAR(255),
+  feedName VARCHAR(255),
+  productName VARCHAR(255),
   quantity INT,
   units VARCHAR(255),
   foodpreferences VARCHAR(255),

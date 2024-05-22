@@ -16,7 +16,10 @@ user = os.getenv('USER')
 
 password = os.getenv('PASSWORD')
 
+port = os.getenv('PORT')
+
 CONN_PARAMS = {'host': host,
                'database': database,
                'user': user,
-               'password': password}
+               'password': password,
+               'port': port}

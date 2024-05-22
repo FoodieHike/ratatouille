@@ -8,7 +8,7 @@ from config import CONN_PARAMS
 async def create_campaign(campaign):
     conn = await asyncpg.connect(**CONN_PARAMS)
     await conn.execute(
-        '''INSERT INTO campaign (startdate, enddate,
+        '''INSERT INTO campaigns (startdate, enddate,
             firstfood, lastfood)
             VALUES ($1, $2, $3, $4);''',
         campaign.startdate,
@@ -17,7 +17,7 @@ async def create_campaign(campaign):
         campaign.lastfood,
     )
     row = await conn.fetchrow(
-        '''SELECT * FROM campaign
+        '''SELECT * FROM campaigns
             ORDER BY id
             DESC LIMIT 1;'''
     )
@@ -28,7 +28,7 @@ async def create_campaign(campaign):
 async def create_campaign_bot(campaign, tguid):
     conn = await asyncpg.connect(**CONN_PARAMS)
     await conn.execute(
-        '''INSERT INTO campaign (startdate, enddate,
+        '''INSERT INTO campaigns (startdate, enddate,
             firstfood, lastfood, user_tg_id)
             VALUES ($1, $2, $3, $4, $5);''',
         campaign['startdate'],
@@ -38,7 +38,7 @@ async def create_campaign_bot(campaign, tguid):
         tguid
     )
     row = await conn.fetchrow(
-        '''SELECT * FROM campaign
+        '''SELECT * FROM campaigns
             ORDER BY id
             DESC LIMIT 1;'''
     )
@@ -48,8 +48,8 @@ async def create_campaign_bot(campaign, tguid):
 
 async def get_campaign_all(tguid):
     conn = await asyncpg.connect(**CONN_PARAMS)
-    row = await conn.fetchrow(
-        '''SELECT * FROM campaign
+    row = await conn.fetch(
+        '''SELECT * FROM campaigns
         WHERE user_tg_id = $1''',
         tguid
     )
@@ -60,10 +60,10 @@ async def get_campaign_all(tguid):
 async def get_campaign_by_id(tguid, record_id):
     conn = await asyncpg.connect(**CONN_PARAMS)
     row = await conn.fetchrow(
-        '''SELECT * FROM campaign
+        '''SELECT * FROM campaigns
         WHERE user_tg_id = $1 and id = $2''',
-        tguid,
-        record_id
+        int(tguid),
+        int(record_id)
     )
     await conn.close()
     return row
@@ -72,9 +72,10 @@ async def get_campaign_by_id(tguid, record_id):
 async def get_campaign_last(tguid):
     conn = await asyncpg.connect(**CONN_PARAMS)
     row = await conn.fetchrow(
-        '''SELECT * FROM campaign
-        WHERE user_tg_id=$1''',
-        tguid
+        '''SELECT * FROM campaigns
+        WHERE user_tg_id=$1
+        ORDER BY id DESC LIMIT 1''',
+        int(tguid)
     )
     await conn.close()
     return row
@@ -107,10 +108,10 @@ async def create_user(name, password, tguid):
 # хэндлеры для таблицы menu
 async def get_menu(feedtype):
     conn = await asyncpg.connect(**CONN_PARAMS)
-    row = await conn.connect(
+    row = await conn.fetch(
         '''SELECT productname, quantity, units, feedname
         FROM menu
-        WHERE feedtype=1$''',
+        WHERE feedtype=$1''',
         feedtype
     )
     await conn.close()
