@@ -20,6 +20,7 @@ services:
   bot:
     build: .
     command: python bot_main.py
+    restart: always
     volumes:
       - ./app:/app
     depends_on:

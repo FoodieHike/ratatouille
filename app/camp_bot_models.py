@@ -5,10 +5,8 @@ from pydantic import BaseModel
 
 # Модели для FSM контекста бота:
 class DBCreateContext(StatesGroup):
-    wait_for_startdate_one = State()
-    wait_for_startdate_two = State()
-    wait_for_enddate_one = State()
-    wait_for_enddate_two = State()
+    wait_for_startdate = State()
+    wait_for_enddate = State()
     wait_for_firstfood = State()
     wait_for_lastfood = State()
 

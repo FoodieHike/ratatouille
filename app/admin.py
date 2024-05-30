@@ -11,7 +11,11 @@ app = FastAPI()
 
 Base = declarative_base()
 
-engine = create_async_engine(f'''postgresql+asyncpg://{CONN_PARAMS['user']}:{CONN_PARAMS['password']}@{CONN_PARAMS['host']}:{CONN_PARAMS['port']}/{CONN_PARAMS['database']}''')
+engine = create_async_engine(
+    f'''postgresql+asyncpg://{CONN_PARAMS['user']}:\
+{CONN_PARAMS['password']}@{CONN_PARAMS['host']}:\
+{CONN_PARAMS['port']}/{CONN_PARAMS['database']}'''
+)
 
 
 admin = Admin(app, engine)
@@ -35,7 +39,7 @@ class Campaign(Base):
 
 
 class UserAdmin(ModelView, model=User):
-    column_list = [User.id, User.name]
+    column_list = [User.id, User.name, User.tg_id]
 
 
 class CampaignAdmin(ModelView, model=Campaign):

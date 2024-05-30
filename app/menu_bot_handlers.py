@@ -1,11 +1,10 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardButton
 from aiogram.types import InlineKeyboardMarkup, FSInputFile
 from aiogram.types.callback_query import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from psycopg2.errors import InvalidTextRepresentation
 
 
 import database
@@ -24,7 +23,7 @@ class ChooseIDStates(StatesGroup):
 # хэндлеры для рассчета меню
 
 # хэндлер для начала работы с меню
-@routerMenu.callback_query(lambda cb: cb.data == 'food_menu_button')
+@routerMenu.callback_query(F.data == 'food_menu_button')
 async def callback_menu_handller(query: CallbackQuery, state: FSMContext):
     row = [[InlineKeyboardButton(
         text='Выбрать по ID', callback_data='chooseID'
@@ -34,8 +33,8 @@ async def callback_menu_handller(query: CallbackQuery, state: FSMContext):
            )]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
     await query.message.answer(
-        '''Меню для конкретного похода,
-        или возьмем последнюю запись?''', reply_markup=mrkp
+        '''Меню для конкретного похода,\
+ или возьмем последнюю запись?''', reply_markup=mrkp
     )
     await state.clear()
 
@@ -49,15 +48,15 @@ async def menu_handller(msg: Message, state: FSMContext):
         text='Последняя запись', callback_data='lastone'
     )]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await msg.answer('''Меню для конкретного похода,
-                      или возьмем последнюю запись?''', reply_markup=mrkp)
+    await msg.answer('''Меню для конкретного похода,\
+ или возьмем последнюю запись?''', reply_markup=mrkp)
     await state.clear()
 
 
 # хэндлеры для выбора записи по ID:
 
 # первый
-@routerMenu.callback_query(lambda cb: cb.data == 'chooseID')
+@routerMenu.callback_query(F.data == 'chooseID')
 async def id_for_meny_hsndler(query: CallbackQuery, state: FSMContext):
     await state.clear()
     await query.message.answer('Напишите ID записи похода:')
@@ -69,7 +68,7 @@ async def id_for_meny_hsndler(query: CallbackQuery, state: FSMContext):
 @routerMenu.message(ChooseIDStates.wait_for_id)
 async def choose_id_handler(message: Message, state: FSMContext):
     try:
-        record = database.get_campaign_by_id(
+        record = await database.get_campaign_by_id(
             tguid=message.from_user.id, record_id=message.text
         )
         lenght = record['enddate']-record['startdate']
@@ -121,9 +120,9 @@ async def menu_process(msg: Message, state: FSMContext):
     meals_full_amount = feeds+data['extra_meal']
 
     await msg.answer(
-                    f'''В этом походе, у вас получается всего
-                    {meals_full_amount} приемов пищи.
-                     \nДавайте определим, что вы будете в них есть.''')
+                    f'''В этом походе, у вас получается всего\
+    {meals_full_amount} приемов пищи.\
+        \nДавайте определим, что вы будете в них есть.''')
     first_meal = data['first_meal']
     count_days = data['days_amount']
     last_meal = data['last_meal']
@@ -189,7 +188,7 @@ async def menu_process(msg: Message, state: FSMContext):
 
 
 # хэндлер для предоставления последней записи
-@routerMenu.callback_query(lambda cb: cb.data == 'lastone')
+@routerMenu.callback_query(F.data == 'lastone')
 async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
     await state.clear()
     try:
@@ -212,11 +211,6 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
         await query.message.answer(
             '''Неправильная форма записи!
             \nВведите пожалуйста корректный id (натуральное число):'''
-        )
-    except InvalidTextRepresentation:
-        await query.message.answer(
-            '''Неправильная форма записи!
-            \nВведите, пожалуйста, корректный ID (натуральное число).'''
         )
     else:
         await state.set_data({'days_amount': lenght.days+1})
@@ -251,7 +245,7 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 
 
 # хэндлер для обработки кнопок составления еды
-@routerMenu.callback_query(lambda cb: cb.data.startswith('B'))
+@routerMenu.callback_query(F.data.startswith('B'))
 async def feedtype_b1_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     record = await database.get_menu(feedtype=query.data)
@@ -312,7 +306,7 @@ async def feedtype_b1_handler(query: CallbackQuery, state: FSMContext):
         for key in data:
             if key.startswith('prod'):
                 records_list.append(key)
-        utils.bubble_sort(records_list)
+        records_list.sort()
         # конвертируем ключи в записи данных в массиве
         for index in range(len(records_list)):
             records_list[index] = data[records_list[index]]

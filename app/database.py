@@ -1,6 +1,5 @@
 import asyncpg
 
-
 from config import CONN_PARAMS
 
 

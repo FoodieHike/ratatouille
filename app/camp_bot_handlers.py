@@ -1,15 +1,18 @@
-from aiogram import Router, Bot
+from aiogram import Router, Bot, F
 from aiogram.types import Message, InlineKeyboardButton
 from aiogram.types import InlineKeyboardMarkup, CallbackQuery
 from aiogram.filters import Command
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram.enums.parse_mode import ParseMode
-from psycopg2.errors import InvalidTextRepresentation
+import secrets
+
+from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, \
+    get_user_locale
 
 
 import database
-import utils
 from camp_bot_models import DBCreateContext, UserRegistration, ShowStates
 
 from dotenv import load_dotenv
@@ -24,11 +27,6 @@ load_dotenv(dotenv_path=env_path)
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 
-# глобальные переменные:
-today = datetime.now()
-today = today.strftime('%Y-%m-%d')
-
-
 # объекты для функционирования бота:
 
 routerCampaign = Router()
@@ -38,9 +36,7 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 
 # хэндлеры
 
-
 # стартовый хэндлер:
-
 @routerCampaign.message(Command('start'))
 async def start_handler(msg: Message, state: FSMContext):
     await state.clear()
@@ -55,37 +51,65 @@ async def start_handler(msg: Message, state: FSMContext):
     )
     row = [[btn_create], [btn_show], [btn_menu]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await msg.answer(text='''Привет. Меня зовут Hike Helper.
-                     Я помогу тебе разработать меню для твоего похода
-                     и рассчитаю все необходимые для него продукты.
-                     Выбери, что будем делать дальше:''',
+    await msg.answer(text='''Привет. Меня зовут Hike Helper.\
+ Я помогу тебе разработать меню для твоего похода\
+ и рассчитаю все необходимые для него продукты.\
+ Выбери, что будем делать дальше:''',
                      reply_markup=mrkp)
 
 
 # хэндлеры для команды create:
+# стартовый хэндлер:
+@routerCampaign.message(Command('create'))
+async def camp_create_handler(message: Message, state: FSMContext):
+    user = await database.users_check(tguid=message.from_user.id)
+    if user:
+        await message.answer(
+            "Выберите дату начала похода: ",
+            reply_markup=await SimpleCalendar(
+                locale=await get_user_locale(message.from_user)
+            ).start_calendar()
+        )
+    else:
+        await message.answer(
+            '''Добро пожаловать в бот! Пропишите имя пользователя\
+для использования нашего функционала:'''
+        )
+        await state.set_state(UserRegistration.register)
+
+
+# хэндлер отрабатывает при внесении в таблицу нового пользователя
+@routerCampaign.callback_query(DBCreateContext.wait_for_startdate)
+async def process_startdate(query: CallbackQuery, state: FSMContext):
+    await query.message.answer(
+        "Выберите дату начала похода!!!: ",
+        reply_markup=await SimpleCalendar(
+            locale=await get_user_locale(query.from_user)
+        ).start_calendar()
+    )
+
+
 # альтернативный обработчик под встроенную кнопку:
-@routerCampaign.callback_query(lambda cb: cb.data == 'create')
+@routerCampaign.callback_query(F.data == 'create')
 async def create_inline_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id
     )
-    try:
-        user = await database.users_check(tguid=query.from_user.id)
-        if user:
-            mrkp = utils.months_creator(4)
-            await query.message.answer(
-                'Выберите месяц для похода:', reply_markup=mrkp
-            )
-            await query.answer('Будет создана новая запись')
-            await state.set_state(DBCreateContext.wait_for_startdate_one)
-        else:
-            await query.message.answer(
-                '''Добро пожаловать в бот! Пропишите имя пользователя\
-                    для использования нашего функционала:'''
-            )
-            await state.set_state(UserRegistration.register)
-    except Exception as e:
-        await query.message.answer(f'Exception in command camp!!!\n{e}')
+
+    user = await database.users_check(tguid=query.from_user.id)
+    if user:
+        await query.message.answer(
+                "Выберите дату: ",
+                reply_markup=await SimpleCalendar(
+                    locale=await get_user_locale(query.from_user)
+                ).start_calendar()
+        )
+    else:
+        await query.message.answer(
+            '''Добро пожаловать в бот! Пропишите имя пользователя\
+ для использования нашего функционала:'''
+        )
+        await state.set_state(UserRegistration.register)
 
 
 # Создание нового пользователя (сработает, если чекер не найдет его в таблице)
@@ -93,99 +117,86 @@ async def create_inline_handler(query: CallbackQuery, state: FSMContext):
 async def registration_handler(message: Message, state: FSMContext):
     data = {'name': message.text}
     # заглушка для пароля (пока хз, зачем он)
-    passgen = ''.join(
-        [str(message.from_user.full_name), '_', str(message.from_user.id)[-4:]]
-    )
     await database.create_user(
-        name=data['name'], password=passgen, tguid=message.from_user.id
+        name=data['name'],
+        password=secrets.token_hex(16),
+        tguid=message.from_user.id
     )
     user = await database.users_check(tguid=message.from_user.id)
     if user:
         await message.answer(
-            f'отлично, {message.text}, теперь можно приступить к записи похода'
+            f'''Отлично, {message.text}, \
+теперь можно приступить к записи похода''',
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[InlineKeyboardButton(
+                    text='Перейти к заполнению', callback_data=' ',
+                )]]
+            )
         )
-        # входная точка для создания записи вы бд
-        mrkp = utils.months_creator(4)
-        await message.answer('Выберите месяц для похода:', reply_markup=mrkp)
-        await state.set_state(DBCreateContext.wait_for_startdate_one)
+        # входная точка для создания записи в бд
+        await state.set_state(DBCreateContext.wait_for_startdate)
 
 
-# тест новой библиотеки на боте
-@routerCampaign.message(Command('create'))
-async def camp_create_handler(message: Message, state: FSMContext):
-    try:
-        user = await database.users_check(tguid=message.from_user.id)
-        if user:
-            mrkp = utils.months_creator(4)
-            await message.answer(
-                'Выберите месяц для похода:', reply_markup=mrkp
+# simple calendar usage - filtering callbacks of calendar format
+@routerCampaign.callback_query(SimpleCalendarCallback.filter())
+async def process_simple_calendar(
+    query: CallbackQuery,
+    callback_data: CallbackData,
+    state: FSMContext
+):
+    calendar = SimpleCalendar(
+        locale=await get_user_locale(query.from_user), show_alerts=True
+    )
+    calendar.set_dates_range(
+        datetime.now()-timedelta(days=1), datetime.now()+timedelta(days=365)
+    )
+    selected, date = await calendar.process_selection(query, callback_data)
+    if selected:
+        data = await state.get_data()
+        try:
+            data['startdate']
+        except KeyError:
+            data['startdate'] = date
+            await state.set_data(data)
+            await query.message.answer(
+                f'Дата начала похода {date.strftime("%Y-%m-%d")}',
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [InlineKeyboardButton(
+                            text='выбрать дату окончания', callback_data=' '
+                        )]
+                    ])
             )
-            await message.answer('Будет создана новая запись')
-            await state.set_state(DBCreateContext.wait_for_startdate_one)
+            await state.set_state(DBCreateContext.wait_for_enddate)
         else:
-            await message.answer(
-                '''Добро пожаловать в бот! Пропишите имя пользователя
-                    для использования нашего функционала:'''
+            data['enddate'] = date
+            await state.set_data(data)
+            await query.message.answer(
+                f'Дата окончания похода {date.strftime("%Y-%m-%d")}'
             )
-            await state.set_state(UserRegistration.register)
-    except Exception as e:
-        await message.answer(f'Exception in command camp!!!\n{e}')
+            row = [
+                InlineKeyboardButton(text='Завтрак', callback_data='1'),
+                InlineKeyboardButton(text='Обед', callback_data='2'),
+                InlineKeyboardButton(text='Ужин', callback_data='3')
+            ]
+            rows = [row]
+            mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+            await query.message.answer(
+                'Введите первый прием пищи:', reply_markup=mrkp
+            )
+            await state.set_state(DBCreateContext.wait_for_firstfood)
 
 
-@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_one)
-async def process_startdate(query: CallbackQuery, state: FSMContext):
-    month = int(query.data)
-    year = datetime.now()
-    year = year.strftime('%Y')
-    markup = utils.calendar(year, month)
-    await query.message.answer(text='Выберите дату:', reply_markup=markup)
-    await state.set_state(DBCreateContext.wait_for_startdate_two)
-
-
-# Обработчик для ввода startdate второй
-@routerCampaign.callback_query(DBCreateContext.wait_for_startdate_two)
-async def process_startdate_second(query: CallbackQuery, state: FSMContext):
-    await query.message.answer(f'Дата начала похода:\n{query.data}')
-    await state.set_data({'startdate': query.data})
-# открываем новый календарь для следующей даты
-    mrkp = utils.months_creator(4)
-    await query.message.answer(
-        'Выберите месяц окончания похода:', reply_markup=mrkp
-    )
-    await state.set_state(DBCreateContext.wait_for_enddate_one)
-
-
-# обработчик для enddate первый
-@routerCampaign.callback_query(DBCreateContext.wait_for_enddate_one)
+# обработчик для enddate
+@routerCampaign.callback_query(DBCreateContext.wait_for_enddate)
 async def process_enddate(query: CallbackQuery, state: FSMContext):
-    month = int(query.data)
-    year = datetime.now()
-    year = year.strftime('%Y')
-    markup = utils.calendar(year, month)
     await query.message.answer(
-        text='Выберите дату окончания похода:', reply_markup=markup
+        "Выберите дату окончания похода: ",
+        reply_markup=await SimpleCalendar(
+            locale=await get_user_locale(query.from_user)
+        ).start_calendar()
     )
-    await state.set_state(DBCreateContext.wait_for_enddate_two)
-
-
-# обработчик для enddate второй
-@routerCampaign.callback_query(DBCreateContext.wait_for_enddate_two)
-async def process_enddate_second(query: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    await query.message.answer(f'Дата окончания:\n{query.data}')
-    data['enddate'] = query.data
-    await state.set_data(data)
-    row = [
-        InlineKeyboardButton(text='Завтрак', callback_data='1'),
-        InlineKeyboardButton(text='Обед', callback_data='2'),
-        InlineKeyboardButton(text='Ужин', callback_data='3')
-    ]
-    rows = [row]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
-    await query.message.answer(
-        'Введите первый прием пищи:', reply_markup=mrkp
-    )
-    await state.set_state(DBCreateContext.wait_for_firstfood)
+    await query.message.edit_reply_markup(reply_markup=None)
 
 
 # Обработчик для ввода firstfood
@@ -214,8 +225,6 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
     # Получаем текущие данные
     data = await state.get_data()
     data['lastfood'] = int(query.data)
-    data['startdate'] = datetime.strptime(data['startdate'], '%Y-%m-%d')
-    data['enddate'] = datetime.strptime(data['enddate'], '%Y-%m-%d')
     await state.set_data(data)
     record = await database.create_campaign_bot(
         campaign=data, tguid=query.from_user.id
@@ -237,9 +246,9 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
     if str(lenght).endswith('1'):
         await query.message.answer(
-            f'''Спасибо, данные у меня.\n
-            Длительность похода составляет {lenght} день.\n
-            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+            f'''Спасибо, данные у меня.
+Длительность похода составляет {lenght} день.
+ID Вашей записи - {record["id"]}''', reply_markup=mrkp
         )
     elif (
         str(lenght).endswith('2')
@@ -247,22 +256,22 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
         or str(lenght).endswith('4')
     ):
         await query.message.answer(
-            f'''Спасибо, данные у меня.\n
-            Длительность похода составляет {lenght} дня.\n
-            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+            f'''Спасибо, данные у меня.
+Длительность похода составляет {lenght} дня.
+ID Вашей записи - {record["id"]}''', reply_markup=mrkp
         )
     else:
         await query.message.answer(
-            f'''Спасибо, данные у меня.\n
-            Длительность похода составляет {lenght} дней.\n
-            ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+            f'''Спасибо, данные у меня.
+Длительность похода составляет {lenght} дней.
+ID Вашей записи - {record["id"]}''', reply_markup=mrkp
         )
     await state.clear()
 
 
 # Обработчики команды show для просмотра данных из бд:
 # альтернативный обработчик под встроенную кнопку:
-@routerCampaign.callback_query(lambda cb: cb.data == 'show')
+@routerCampaign.callback_query(F.data == 'show')
 async def show_inline_handler(qry: CallbackQuery, state: FSMContext):
     await bot.delete_message(
         chat_id=qry.message.chat.id, message_id=qry.message.message_id
@@ -299,7 +308,7 @@ async def get_camp_handler(msg: Message, state: FSMContext):
 
 
 # хэндлер для выведения всех записей:
-@routerCampaign.callback_query(lambda cb: cb.data == 'all')
+@routerCampaign.callback_query(F.data == 'all')
 async def show_all_handler(query: CallbackQuery):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id
@@ -356,7 +365,7 @@ async def show_all_handler(query: CallbackQuery):
 
 
 # хэндлер для выведения конкретной записи:
-@routerCampaign.callback_query(lambda cb: cb.data == 'current')
+@routerCampaign.callback_query(F.data == 'current')
 async def show_current_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id)
@@ -412,17 +421,13 @@ async def show_current_process(message: Message, state: FSMContext):
         await message.answer('''Неправильная форма записи!\n
                          Введите пожалуйста,
                          корректный id (натуральное число):''')
-    except InvalidTextRepresentation:
-        await message.answer('''Неправильная форма записи!\n
-                         Введите, пожалуйста,
-                         корректный ID (натуральное число).''')
     else:
         await state.clear()
 
 
 # хэндлер для обработки Меню:
 
-@routerCampaign.callback_query(lambda cb: cb.data == 'menu_button')
+@routerCampaign.callback_query(F.data == 'menu_button')
 async def menu_handler(qry: CallbackQuery):
     btn_create = InlineKeyboardButton(
         text='Создать запись', callback_data='create')
