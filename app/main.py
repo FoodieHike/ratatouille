@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 
 from admin import app
-import models
+import schemas 
 import database
 
 
@@ -14,8 +14,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # эндпоинт для наполнения таблицы campaign
-@app.post("/campaign/", response_model=models.Campaign)
-async def create_campaign(campaign: models.CampaignCreate):
+@app.post("/campaign/", response_model=schemas.Campaign)
+async def create_campaign(campaign: schemas.CampaignCreate):
     new_campaign = await database.create_campaign(campaign)
     if new_campaign:
         return new_campaign

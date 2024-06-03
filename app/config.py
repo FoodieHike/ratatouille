@@ -23,3 +23,8 @@ CONN_PARAMS = {'host': host,
                'user': user,
                'password': password,
                'port': port}
+
+
+database_url = f'''postgresql+asyncpg://{CONN_PARAMS['user']}:\
+{CONN_PARAMS['password']}@{CONN_PARAMS['host']}:\
+{CONN_PARAMS['port']}/{CONN_PARAMS['database']}'''
