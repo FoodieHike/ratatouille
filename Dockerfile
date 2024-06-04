@@ -1,17 +1,11 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
 
-COPY requirements.txt .
+WORKDIR /src
+
+COPY . /src
 
 RUN pip install -r requirements.txt
 
-COPY ./app /app
-
-COPY ./images /images
-
-COPY ./pdf_files /pdf_files
-
-COPY .env /
- 
 RUN apt-get update && \
     apt-get install -y postgresql-client && \
     rm -rf /var/lib/apt/lists/*

@@ -19,9 +19,10 @@ services:
       - .env
   bot:
     build: .
-    command: python bot_main.py
+    command: python bot/bot_main.py
     restart: always
     volumes:
+      - ./bot:/bot
       - ./app:/app
     depends_on:
       - db
@@ -45,14 +46,15 @@ services:
     command: alembic upgrade head
     volumes:
       - ./app:/app
-      - ./alembic.ini:/app/alembic.ini
-      - ./migrations:/app/migrations
+      - ./alembic.ini:/alembic.ini
+      - ./migrations:/migrations
     depends_on:
       - db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: food_db
+    restart: no
   pgadmin:
     image: dpage/pgadmin4
     restart: always

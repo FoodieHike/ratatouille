@@ -12,11 +12,17 @@ from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, \
     get_user_locale
 
 
-import database
-from camp_bot_models import DBCreateContext, UserRegistration, ShowStates
+import sys
+import os
+
+
+import app.database as database
+from bot_schemas import DBCreateContext, UserRegistration, ShowStates
 
 from dotenv import load_dotenv
-import os
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 current_file_dir = os.path.abspath(os.path.dirname(__file__))
 

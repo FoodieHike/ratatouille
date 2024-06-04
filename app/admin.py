@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Date
 
+
+from models import Base
 from config import CONN_PARAMS
 
 
 app = FastAPI()
 
-Base = declarative_base()
 
 engine = create_async_engine(
     f'''postgresql+asyncpg://{CONN_PARAMS['user']}:\

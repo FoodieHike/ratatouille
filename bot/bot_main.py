@@ -5,8 +5,8 @@ from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 
-from camp_bot_handlers import routerCampaign, bot
-from menu_bot_handlers import routerMenu
+from campaign_handlers import routerCampaign, bot
+from menu_handlers import routerMenu
 
 
 logging.basicConfig(level=logging.INFO)

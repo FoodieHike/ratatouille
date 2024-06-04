@@ -7,10 +7,16 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
 
-import database
-import utils
-import pdf_creator
-from camp_bot_handlers import bot
+import os
+import sys
+
+import app.database as database
+import app.utils as utils
+import app.pdf_creator as pdf_creator
+from campaign_handlers import bot
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 routerMenu = Router()
 

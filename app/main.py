@@ -1,16 +1,18 @@
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-
+import os
 
 from admin import app
-import schemas 
+import schemas
 import database
 
 
 templates = Jinja2Templates(directory='templates')
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+directory = os.path.join(os.path.dirname(__file__), "static")
+
+app.mount("/static", StaticFiles(directory=directory), name="static")
 
 
 # эндпоинт для наполнения таблицы campaign
@@ -24,4 +26,4 @@ async def create_campaign(campaign: schemas.CampaignCreate):
 
 @app.get('/')
 async def read_root(request: Request):
-    return templates.TemplateResponse('main.html', {'request': request})
+    return templates.TemplateResponse('static/main.html', {'request': request})
