@@ -15,6 +15,7 @@ from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback, \
 import sys
 import os
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import app.database as database
 from bot_schemas import DBCreateContext, UserRegistration, ShowStates
@@ -22,7 +23,7 @@ from bot_schemas import DBCreateContext, UserRegistration, ShowStates
 from dotenv import load_dotenv
 
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 current_file_dir = os.path.abspath(os.path.dirname(__file__))
 

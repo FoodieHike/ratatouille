@@ -1,14 +1,19 @@
+import os
+
+
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import os
+
 
 from admin import app
 import schemas
 import database
 
 
-templates = Jinja2Templates(directory='templates')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, 'templates'))
+
 
 directory = os.path.join(os.path.dirname(__file__), "static")
 
@@ -26,4 +31,4 @@ async def create_campaign(campaign: schemas.CampaignCreate):
 
 @app.get('/')
 async def read_root(request: Request):
-    return templates.TemplateResponse('static/main.html', {'request': request})
+    return templates.TemplateResponse('main.html', {'request': request})

@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import Column, Integer, String, Date
 
 
-from models import Base
+from models import User, Campaign
 from config import CONN_PARAMS
 
 
@@ -19,23 +18,6 @@ engine = create_async_engine(
 
 
 admin = Admin(app, engine)
-
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    password = Column(String)
-    tg_id = Column(Integer)
-
-
-class Campaign(Base):
-    __tablename__ = 'campaigns'
-    id = Column(Integer, primary_key=True)
-    startdate = Column(Date)
-    enddate = Column(Date)
-    firstfood = Column(Integer)
-    lastfood = Column(Integer)
 
 
 class UserAdmin(ModelView, model=User):

@@ -41,7 +41,7 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-  alembic:
+  migrations:
     build: .
     command: alembic upgrade head
     volumes:
