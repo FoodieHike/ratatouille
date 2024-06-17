@@ -29,10 +29,6 @@ def meals_distributor(first_meal, meals_amount):
 
 # для подсчета всех продуктов
 def meal_total_count(data):
-    import re
-from collections import defaultdict
-
-def meal_total_count(data):
     if not isinstance(data, list):
         data = [data]
 

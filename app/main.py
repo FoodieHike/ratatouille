@@ -32,3 +32,13 @@ async def create_campaign(campaign: schemas.CampaignCreate):
 @app.get('/')
 async def read_root(request: Request):
     return templates.TemplateResponse('main.html', {'request': request})
+
+
+@app.post('/test/')
+async def testing_users_check(uid: int):
+    return await database.users_check(uid)
+
+
+@app.post('/test1/')
+async def test_user_create(name: str, password: str, uid: int):
+    return await database.create_user(name, password, uid)

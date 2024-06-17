@@ -4,10 +4,10 @@ from enum import Enum
 
 
 # Модель для валидации приемов пищи
-class FeedType(str, Enum):
-    breakfast = '1'
-    lunch = '2'
-    dinner = '3'
+class FeedType(int, Enum):
+    breakfast = 1
+    lunch = 2
+    dinner = 3
 
 
 # базовая модель для валидации записей пользователя

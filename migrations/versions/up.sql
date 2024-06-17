@@ -1,25 +1,24 @@
+CREATE TABLE Users (
+  ID SERIAL PRIMARY KEY,
+  name VARCHAR(255),
+  password VARCHAR(255),
+  tg_id INT UNIQUE
+  
+);
+
 CREATE TABLE Campaigns (
   ID SERIAL PRIMARY KEY,
   startdate DATE,
   enddate DATE,
   firstfood INT,
   lastfood INT,
-  user_tg_id INT UNIQUE
+  user_tg_id INT,
+  FOREIGN KEY (user_tg_id) REFERENCES Users(tg_id) ON DELETE SET NULL
 );
-
-
-CREATE TABLE Users (
-  ID SERIAL PRIMARY KEY,
-  name VARCHAR(255),
-  password VARCHAR(255),
-  tg_id INT,
-  FOREIGN KEY (tg_id) REFERENCES Campaigns(user_tg_id) ON DELETE SET NULL
-);
-
 
 CREATE TABLE People (
   ID INT PRIMARY KEY,
-  campaign_ID INT,
+  campaign_ID INT NULL,
   FIO VARCHAR(255),
   foodpreferences VARCHAR(255),
   FOREIGN KEY (campaign_ID) REFERENCES Campaigns(ID) ON DELETE SET NULL
@@ -38,7 +37,7 @@ CREATE TABLE Menu (
   quantity INT,
   units VARCHAR(255),
   foodpreferences VARCHAR(255),
-  ID_PRODUCT INT,
+  ID_PRODUCT INT NULL,
   FOREIGN KEY (ID_PRODUCT) REFERENCES Product(ID) ON DELETE SET NULL
 );
 
@@ -48,9 +47,9 @@ CREATE TABLE Admins (
   password VARCHAR(255)
 );
 
-INSERT INTO Campaigns (StartDate, Enddate, Firstfood, Lastfood, user_tg_id) VALUES ('2024-12-01', '2024-12-31', '1', '2', '001');
+INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'somepass', 1);
 
-INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'somepass', '001');
+INSERT INTO Campaigns (StartDate, Enddate, Firstfood, Lastfood, user_tg_id) VALUES ('2024-12-01', '2024-12-31', 1, 2, 1);
 
 INSERT INTO people (ID, campaign_ID, FIO, foodpreferences)
 VALUES 

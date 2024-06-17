@@ -21,7 +21,7 @@ def pdf_creation(*meal_products, filename, startdate, enddate, total):
     y_position = height - 50
 
     # Добавляем изображение
-    image_path = '/images/bot_logo.png'
+    image_path = '../images/bot_logo.png'
     page.drawImage(image_path, x=200, y=y_position-100, width=180, height=150)
 
     # Заголовок

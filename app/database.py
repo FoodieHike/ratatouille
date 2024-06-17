@@ -1,6 +1,6 @@
 import asyncpg
 
-from config import CONN_PARAMS
+from app.config import CONN_PARAMS
 
 
 # хэндлеры для таблицы campaign
@@ -124,3 +124,16 @@ async def get_menu_all():
     )
     await conn.close()
     return row
+
+async def create_user_test(name, password, tguid, message):
+    await message.answer('starting to create user')
+    conn = await asyncpg.connect(database='food_db', user='postgres', host='db', password='postgres', port=5432)
+    await message.answer(f'this is connection {conn}')
+    await conn.execute(
+        '''INSERT INTO users (name, password, tg_id)
+        VALUES ($1, $2, $3);''',
+        name,
+        password,
+        tguid
+    )
+    await conn.close()
