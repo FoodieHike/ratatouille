@@ -9,8 +9,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    name = Column(String)
-    password = Column(String)
+    username = Column(String)
     tg_id = Column(Integer)
 
 

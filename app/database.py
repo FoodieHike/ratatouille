@@ -92,10 +92,21 @@ async def users_check(tguid):
     return row
 
 
+async def get_user_by_name(username):
+    conn = await asyncpg.connect(**CONN_PARAMS)
+    row = await conn.fetchrow(
+        '''SELECT * FROM users
+        WHERE username=$1''',
+        username
+    )
+    if row:
+        return row
+
+
 async def create_user(name, password, tguid):
     conn = await asyncpg.connect(**CONN_PARAMS)
     await conn.execute(
-        '''INSERT INTO users (name, password, tg_id)
+        '''INSERT INTO users (username, password, tg_id)
         VALUES ($1, $2, $3);''',
         name,
         password,
@@ -124,16 +135,3 @@ async def get_menu_all():
     )
     await conn.close()
     return row
-
-async def create_user_test(name, password, tguid, message):
-    await message.answer('starting to create user')
-    conn = await asyncpg.connect(database='food_db', user='postgres', host='db', password='postgres', port=5432)
-    await message.answer(f'this is connection {conn}')
-    await conn.execute(
-        '''INSERT INTO users (name, password, tg_id)
-        VALUES ($1, $2, $3);''',
-        name,
-        password,
-        tguid
-    )
-    await conn.close()

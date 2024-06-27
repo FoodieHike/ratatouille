@@ -1,9 +1,9 @@
 CREATE TABLE Users (
   ID SERIAL PRIMARY KEY,
-  name VARCHAR(255),
+  username VARCHAR(255),
   password VARCHAR(255),
-  tg_id INT UNIQUE
-  
+  tg_id INT UNIQUE,
+  disabled BOOLEAN
 );
 
 CREATE TABLE Campaigns (
@@ -26,7 +26,7 @@ CREATE TABLE People (
 
 CREATE TABLE Product (
   ID INT PRIMARY KEY,
-  PRODUCT VARCHAR(255)
+  product VARCHAR(255)
 );
 
 CREATE TABLE Menu (
@@ -41,13 +41,7 @@ CREATE TABLE Menu (
   FOREIGN KEY (ID_PRODUCT) REFERENCES Product(ID) ON DELETE SET NULL
 );
 
-CREATE TABLE Admins (
-  ID SERIAL PRIMARY KEY,
-  username VARCHAR(255),
-  password VARCHAR(255)
-);
-
-INSERT INTO Users (name, password, tg_id) VALUES ('John Doe', 'somepass', 1);
+INSERT INTO Users (username, tg_id, disabled) VALUES ('Admin', 1, FALSE);
 
 INSERT INTO Campaigns (StartDate, Enddate, Firstfood, Lastfood, user_tg_id) VALUES ('2024-12-01', '2024-12-31', 1, 2, 1);
 
@@ -97,6 +91,3 @@ VALUES ('1', 'B1', 'Овсянка с курагой,бутер с сыром', 
        ('19', 'B2', 'Пшенка с ковбаськой', 'Джем', 20, 'гр', 'N', '4'),
        ('20', 'B2', 'Пшенка с ковбаськой', 'Орехи', 20, 'гр', 'N', '14'),
        ('21', 'B2', 'Пшенка с ковбаськой', 'Сыр твердый', 30, 'гр', 'V', '15');
-
-INSERT INTO admins (username, password) 
-VALUES ('Admin', 'e64b78fc3bc91bcbc7dc232ba8ec59e0');

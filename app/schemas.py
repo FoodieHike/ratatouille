@@ -1,16 +1,17 @@
 from pydantic import BaseModel
 from datetime import date
 from enum import Enum
+from typing import Union
 
 
-# Модель для валидации приемов пищи
+# Для валидации приемов пищи
 class FeedType(int, Enum):
     breakfast = 1
     lunch = 2
     dinner = 3
 
 
-# базовая модель для валидации записей пользователя
+# Для валидации записей пользователя
 class CampaignBase(BaseModel):
     startdate: date
     enddate: date
@@ -18,13 +19,13 @@ class CampaignBase(BaseModel):
     lastfood: FeedType
 
 
-# модель для валиации взаимодейтвия с пользователем и записи данных в бд
+# Для валиации взаимодейтвия с пользователем и записи данных в бд
 # (тута будем добавлять всякое)
 class CampaignCreate(CampaignBase):
     pass
 
 
-# модель для доставания записей из campaign
+# Для доставания записей из campaign
 class Campaign(CampaignBase):
     id: int
 
@@ -32,3 +33,25 @@ class Campaign(CampaignBase):
 class UserReg(BaseModel):
     name: str
     password: str
+
+
+# Для валидации данных для авторизации пользователей
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
+
+
+class User(BaseModel):
+    username: str
+    tg_id: Union[int, None] = None
+    email: Union[str, None] = None
+    full_name: Union[str, None] = None
+    disabled: Union[bool, None] = None
+
+
+class UserInDB(User):
+    hashed_password: str

@@ -10,7 +10,11 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 import os
+import sys
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app.config import HASHED_PASSWORD
 
 # revision identifiers, used by Alembic.
 revision: str = 'a5ee1c8228d9'
@@ -29,6 +33,15 @@ def use_sql(filename):
 
 def upgrade() -> None:
     use_sql('up.sql')
+    conn = op.get_bind()
+    conn.execute(
+        sa.text('''
+            UPDATE users
+            SET password = :password
+            WHERE id = 1
+        '''),
+        {'password': HASHED_PASSWORD}
+    )
 
 
 def downgrade() -> None:
