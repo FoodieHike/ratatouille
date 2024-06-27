@@ -12,7 +12,6 @@ import sys
 
 import app.database as database
 import app.utils as utils
-import app.pdf_creator as pdf_creator
 from campaign_handlers import bot
 
 
@@ -324,7 +323,7 @@ async def feedtype_b1_handler(query: CallbackQuery, state: FSMContext):
         total = utils.meal_total_count(total_data)
 
         # создание файлика
-        pdf_creator.pdf_creation(
+        utils.pdf_creation(
             *records_list, filename=query.from_user.id,
             startdate=data['startdate'], enddate=data['enddate'], total=total
         )
