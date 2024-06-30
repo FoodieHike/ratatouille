@@ -15,13 +15,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, 'templates'))
 
 
-directory = os.path.join(os.path.dirname(__file__), "static")
+directory = os.path.join(os.path.dirname(__file__), 'static')
 
-app.mount("/static", StaticFiles(directory=directory), name="static")
+app.mount('/static', StaticFiles(directory=directory), name='static')
 
 
 # эндпоинт для наполнения таблицы campaign
-@app.post("/campaign/", response_model=schemas.Campaign)
+@app.post('/campaign/', response_model=schemas.Campaign)
 async def create_campaign(campaign: schemas.CampaignCreate):
     new_campaign = await database.create_campaign(campaign)
     if new_campaign:

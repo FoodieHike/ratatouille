@@ -12,18 +12,18 @@ from schemas import TokenData, User, UserInDB
 import database
 
 
-# Create a PassLib "context".
+# Create a PassLib 'context'.
 # This is what will be used to hash and verify passwords.
 pwd_context = CryptContext(schemes=['bcrypt'])
 
 
 # And another utility to verify if a received password matches the hash stored.
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
 
 # Create a utility function to hash a password coming from the user.
-def get_password_hash(password):
+def get_password_hash(password: str):
     return pwd_context.hash(password)
 
 
@@ -100,12 +100,12 @@ async def get_current_active_user(
 
 class AdminAuth(AuthenticationBackend):
     async def authenticate(self, request: Request) -> bool:
-        token = request.session.get("access_token")
+        token = request.session.get('access_token')
         if not token:
             return False
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str = payload.get("sub")
+            username: str = payload.get('sub')
             if username:
                 return True
         except InvalidTokenError:
@@ -114,15 +114,15 @@ class AdminAuth(AuthenticationBackend):
 
     async def login(self, request: Request) -> Union[RedirectResponse, bool]:
         form = await request.form()
-        username = form.get("username")
-        password = form.get("password")
+        username = form.get('username')
+        password = form.get('password')
 
         user = await authenticate_user(username, password)
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=401, detail='Invalid credentials')
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username},
+            data={'sub': user.username},
             expires_delta=access_token_expires
         )
         request.session.update({'access_token': access_token})

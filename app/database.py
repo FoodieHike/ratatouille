@@ -106,11 +106,12 @@ async def get_user_by_name(username):
 async def create_user(name, password, tguid):
     conn = await asyncpg.connect(**CONN_PARAMS)
     await conn.execute(
-        '''INSERT INTO users (username, password, tg_id)
-        VALUES ($1, $2, $3);''',
+        '''INSERT INTO users (username, password, tg_id, disabled)
+        VALUES ($1, $2, $3, $4);''',
         name,
         password,
-        tguid
+        tguid,
+        True
     )
     await conn.close()
 

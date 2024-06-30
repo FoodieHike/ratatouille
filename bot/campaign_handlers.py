@@ -73,7 +73,7 @@ async def camp_create_handler(message: Message, state: FSMContext):
     user = await database.users_check(message.from_user.id)
     if user:
         await message.answer(
-            "Выберите дату начала похода: ",
+            'Выберите дату начала похода: ',
             reply_markup=await SimpleCalendar(
                 locale=await get_user_locale(message.from_user)
             ).start_calendar()
@@ -90,7 +90,7 @@ async def camp_create_handler(message: Message, state: FSMContext):
 @routerCampaign.callback_query(DBCreateContext.wait_for_startdate)
 async def process_startdate(query: CallbackQuery, state: FSMContext):
     await query.message.answer(
-        "Выберите дату начала похода!!!пятух: ",
+        'Выберите дату начала похода!!!пятух: ',
         reply_markup=await SimpleCalendar(
             locale=await get_user_locale(query.from_user)
         ).start_calendar()
@@ -107,7 +107,7 @@ async def create_inline_handler(query: CallbackQuery, state: FSMContext):
     user = await database.users_check(tguid=query.from_user.id)
     if user:
         await query.message.answer(
-                "Выберите дату: ",
+                'Выберите дату: ',
                 reply_markup=await SimpleCalendar(
                     locale=await get_user_locale(query.from_user)
                 ).start_calendar()
@@ -198,7 +198,7 @@ async def process_simple_calendar(
 @routerCampaign.callback_query(DBCreateContext.wait_for_enddate)
 async def process_enddate(query: CallbackQuery, state: FSMContext):
     await query.message.answer(
-        "Выберите дату окончания похода: ",
+        'Выберите дату окончания похода: ',
         reply_markup=await SimpleCalendar(
             locale=await get_user_locale(query.from_user)
         ).start_calendar()
@@ -255,7 +255,7 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
         await query.message.answer(
             f'''Спасибо, данные у меня.
 Длительность похода составляет {lenght} день.
-ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+ID Вашей записи - {record['id']}''', reply_markup=mrkp
         )
     elif (
         str(lenght).endswith('2')
@@ -265,13 +265,13 @@ ID Вашей записи - {record["id"]}''', reply_markup=mrkp
         await query.message.answer(
             f'''Спасибо, данные у меня.
 Длительность похода составляет {lenght} дня.
-ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+ID Вашей записи - {record['id']}''', reply_markup=mrkp
         )
     else:
         await query.message.answer(
             f'''Спасибо, данные у меня.
 Длительность похода составляет {lenght} дней.
-ID Вашей записи - {record["id"]}''', reply_markup=mrkp
+ID Вашей записи - {record['id']}''', reply_markup=mrkp
         )
     await state.clear()
 

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from models import User, Campaign
 from config import CONN_PARAMS, SECRET_KEY
-from oauth import AdminAuth
+from auth import AdminAuth
 
 app = FastAPI()
 
