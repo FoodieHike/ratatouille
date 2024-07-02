@@ -9,26 +9,6 @@ from reportlab.pdfbase import pdfmetrics
 from aiogram.types import InlineKeyboardMarkup, Message, CallbackQuery
 
 
-# утилита для распределения типов приемов пищи по порядку
-def meals_distributor(first_meal: int, meals_amount: int) -> dict:
-    day_meals = [1, 2, 3]
-    meals_amount = [x for x in range(1, meals_amount+1)]
-    result = {}
-
-    if first_meal == 3:
-        count = 2
-    elif first_meal == 2:
-        count = 1
-    else:
-        count = 0
-    for meal in meals_amount:
-        result[meal] = day_meals[count]
-        count += 1
-        if count > 2:
-            count = 0
-    return result
-
-
 # для подсчета всех продуктов
 def meal_total_count(data: Union[list, str]):
     if not isinstance(data, list):
