@@ -17,13 +17,11 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
+import app.utils as utils
 import app.database as database
 from bot_schemas import DBCreateContext, UserRegistration, ShowStates
 
 from dotenv import load_dotenv
-
-
 
 
 current_file_dir = os.path.abspath(os.path.dirname(__file__))
@@ -59,11 +57,13 @@ async def start_handler(message: Message, state: FSMContext):
     )
     row = [[btn_create], [btn_show], [btn_menu]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await message.answer(text='''Привет. Меня зовут Hike Helper.\
+    await message.answer(
+        text='''Привет. Меня зовут Hike Helper.\
  Я помогу тебе разработать меню для твоего похода\
  и рассчитаю все необходимые для него продукты.\
  Выбери, что будем делать дальше:''',
-                     reply_markup=mrkp)
+        reply_markup=mrkp
+    )
 
 
 # хэндлеры для команды create:
@@ -141,7 +141,6 @@ async def registration_handler(message: Message, state: FSMContext):
                 )]]
             )
         )
-
 
 
 # simple calendar usage - filtering callbacks of calendar format
@@ -320,55 +319,31 @@ async def show_all_handler(query: CallbackQuery):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id
     )
-    response = await database.get_campaign_all(tguid=query.from_user.id)
-    if response:
-        records = []
-        count = 0
-        for row in response:
-            firstfood = row['firstfood']
-            lastfood = row['lastfood']
-            if firstfood == '1':
-                res = 'завтрак'
-            elif firstfood == '2':
-                res = 'обед'
-            else:
-                res = 'ужин'
+    record = await database.get_campaign_all(tguid=query.from_user.id)
+    btn = [[InlineKeyboardButton(
+        text='Выйти в меню', callback_data='menu_button'
+    )]]
+    mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
+    if record:
+        rows = [
+            f'Запись {count + 1}:'
+            f'\nID записи - {row["id"]}; '
+            f'\nдата начала похода - {row["startdate"]}; '
+            f'\nдата окончания похода - {row["enddate"]};'
+            f'\nпервый прием пищи - {utils.get_meal_type(row["firstfood"])}; '
+            f'последний прием пищи - {utils.get_meal_type(row["lastfood"])}\n'
+            for count, row in enumerate(record)
+        ]
 
-            if lastfood == '1':
-                res_s = 'завтрак'
-            elif lastfood == '2':
-                res_s = 'обед'
-            else:
-                res_s = 'ужин'
-            count += 1
-            records.append(
-                'Запись ' +
-                str(count) +
-                ':\n ID записи - ' +
-                str(row['id']) +
-                '; дата начала похода - ' +
-                str(row['startdate']) +
-                '; дата окончания похода - ' +
-                str(row['enddate']) +
-                ';\n' +
-                'первый прием пищи - ' +
-                res +
-                '; последний прием пищи - ' +
-                res_s + '\n'
-            )
-        btn = [[InlineKeyboardButton(
-            text='Выйти в меню', callback_data='menu_button'
-        )]]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await query.message.answer(
-            'Ваши данные:\n'+'\n'.join(records), reply_markup=mrkp)
+            'Ваши данные:\n'+'\n'.join(rows),
+            reply_markup=mrkp
+        )
     else:
-        btn = [[InlineKeyboardButton(
-            text='Выйти в меню', callback_data='menu_button')]]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await query.message.answer(
             'У Вас пока нет записей, но можете их создать:',
-            reply_markup=mrkp)
+            reply_markup=mrkp
+        )
 
 
 # хэндлер для выведения конкретной записи:
@@ -376,8 +351,8 @@ async def show_all_handler(query: CallbackQuery):
 async def show_current_handler(query: CallbackQuery, state: FSMContext):
     await bot.delete_message(
         chat_id=query.message.chat.id, message_id=query.message.message_id)
-    response = await database.get_campaign_all(tguid=query.from_user.id)
-    if response:
+    record = await database.get_campaign_all(tguid=query.from_user.id)
+    if record:
         await query.message.answer('Введите ID записи:')
         await state.set_state(ShowStates.putID)
     else:
@@ -393,41 +368,30 @@ async def show_current_handler(query: CallbackQuery, state: FSMContext):
 @routerCampaign.message(ShowStates.putID)
 async def show_current_process(message: Message, state: FSMContext):
     try:
-        response = await database.get_campaign_by_id(
+        record = await database.get_campaign_by_id(
             tguid=message.from_user.id, record_id=message.text
         )
-        firstfood = response['firstfood']
-        lastfood = response['lastfood']
-        if firstfood == '1':
-            res = 'завтрак'
-        elif firstfood == '2':
-            res = 'обед'
-        else:
-            res = 'ужин'
+        firstfood = utils.get_meal_type(record['firstfood'])
+        lastfood = utils.get_meal_type(record['lastfood'])
 
-        if lastfood == '1':
-            res_s = 'завтрак'
-        elif lastfood == '2':
-            res_s = 'обед'
-        else:
-            res_s = 'ужин'
         btn = [[InlineKeyboardButton(
             text='Выйти в меню', callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await message.answer(
             f'''Ваша запись:\n
-            дата начала похода - {response['startdate']}\n
-            дата окончания похода -  {response['enddate']}\n
-            первый прием пищи - {res}\n
-            последний прием пищи - {res_s}''',
+            дата начала похода - {record['startdate']}\n
+            дата окончания похода -  {record['enddate']}\n
+            первый прием пищи - {firstfood}\n
+            последний прием пищи - {lastfood}''',
             reply_markup=mrkp
         )
     except TypeError:
         await message.answer('Такой в ваших записях нет. Попробуйте другой id')
     except ValueError:
-        await message.answer('''Неправильная форма записи!\n
-                         Введите пожалуйста,
-                         корректный id (натуральное число):''')
+        await message.answer(
+            '''Неправильная форма записи!
+Введите пожалуйста, корректный id (натуральное число):'''
+        )
     else:
         await state.clear()
 
@@ -436,16 +400,22 @@ async def show_current_process(message: Message, state: FSMContext):
 
 @routerCampaign.callback_query(F.data == 'menu_button')
 async def menu_handler(query: CallbackQuery):
-    btn_create = InlineKeyboardButton(
-        text='Создать запись', callback_data='create')
-    btn_show = InlineKeyboardButton(
-        text='Показать запись', callback_data='show')
-    btn_menu = InlineKeyboardButton(
-        text='Составить меню для похода', callback_data='food_menu_button')
-    row = [[btn_create], [btn_show], [btn_menu]]
+    row = [
+        [InlineKeyboardButton(
+            text='Создать запись', callback_data='create'
+        )],
+        [InlineKeyboardButton(
+            text='Показать запись', callback_data='show'
+        )],
+        [InlineKeyboardButton(
+            text='Составить меню для похода', callback_data='food_menu_button'
+        )]
+    ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await query.message.answer(text='Что будем делать дальше?',
-                             reply_markup=mrkp)
+    await query.message.answer(
+        text='Что будем делать дальше?',
+        reply_markup=mrkp
+    )
 
 
 # хэндлер-заглушка для help:
@@ -455,9 +425,3 @@ async def menu_handler(query: CallbackQuery):
 async def help_handler(message: Message, state: FSMContext):
     await state.clear()
     await message.answer('Здесь пока ничего нет, опция в разработке...')
-
-
-
-
-
-

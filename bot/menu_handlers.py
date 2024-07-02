@@ -105,16 +105,19 @@ async def menu_process(message: Message, state: FSMContext):
     # количество приемов пищи
     meals_full_amount = feeds+data['extra_meal']
     await message.answer(
-                    f'''В этом походе, у вас получается всего\
-    {meals_full_amount} приемов пищи.\
-        \nДавайте определим, что вы будете в них есть.''')
-    
+        f'В этом походе, у вас получается всего'
+        f' {meals_full_amount} приемов пищи.'
+        f'\nДавайте определим, что вы будете в них есть.'
+    )
+
     first_meal = data['firstfood']
     days_amount = data['days_amount']
     last_meal = data['lastfood']
 
     records = await database.get_menu_all()
-    feednames_dict = {record['feedname']: record['feedtype'] for record in records}
+    feednames_dict = {
+        record['feedname']: record['feedtype'] for record in records
+    }
 
     # Устанавливаем клавиатуру с меню для каждого сообщения
     buttons = [
@@ -131,7 +134,7 @@ async def menu_process(message: Message, state: FSMContext):
                     mrkp,
                     message,
                     data,
-                    feed_type=utils.get_feed_type(meal)
+                    feed_type=utils.get_meal_type(meal)
                 )
         else:
             for meal in range(first_meal, 4):
@@ -140,7 +143,7 @@ async def menu_process(message: Message, state: FSMContext):
                     mrkp,
                     message,
                     data,
-                    feed_type=utils.get_feed_type(meal)
+                    feed_type=utils.get_meal_type(meal)
                 )
                 first_meal += 1
                 if first_meal > 3:
@@ -193,74 +196,34 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 async def feedtype_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     record = await database.get_menu(feedtype=query.data)
-    full_list = []
-    meal_name = False
-    # формируем сообщение с нужными пропорциями еды
-    # (надо будет отдельно функцию написать и бромсить в утилиты)
-    for obj in record:
-        temp_row = ' '.join(
-            [str(
-                obj['quantity']*data['people_amount']
-            ), obj['units'], obj['productname']]
-        )
-        full_list.append(temp_row)
-        if not meal_name:
-            meal_name = obj['feedname']
-    res = '\n'.join(full_list)
-    # достаем информацию о дне и приеме пище
-    # (в словаре состояний под номером id сообщения со встроенной кнопкой)
-    crude_row = data[''.join(['message_id', str(query.message.message_id)])]
-    day, meal = crude_row.split('$')       # распределяем по переменным
+    meal_products, meal, day = utils.get_daily_menu(record, data, query)
 
-    # формирование списка продуктов и счетчика меню
-    meal_products = f'''День похода - {day}, прием пищи -
-                    {meal} ({meal_name}):\n{res}'''
-
-    if meal == 'завтрак':
-        feed = 1
-    elif meal == 'обед':
-        feed = 2
-    else:
-        feed = 3
     # формирование ключа для записи в pdf
-    products_list = ''.join(['prod', str(day), str(feed)])
-    # запись строки с продуктами для формирования pdf документа
-    data[products_list] = meal_products
+    # в значении текст дневного меню
+    data[f'daily_menu,{day},{meal}'] = meal_products
     # работа с удалением сообщения и записи в словаре
     await bot.delete_message(
-        chat_id=query.message.chat.id, message_id=query.message.message_id
+        chat_id=query.message.chat.id,
+        message_id=query.message.message_id
     )
-    del data[''.join(['message_id', str(query.message.message_id)])]
+
+    # удаляем из словаря состояний лишнюю инфу об удаленном сообщении
+    del data[f'message_id{query.message.message_id}']
     await state.set_data(data)
 
-    found_key = False
-
-    for key in data:
-        # проверяем, есть ли неудаленные сообщения, не оконена ли запись
-        if key.startswith('message_id'):
-            found_key = True
-            break
-
-    if not found_key:
+    undeleted_messages = [
+        message_id
+        for message_id in data.keys()
+        if message_id.startswith('message_id')
+    ]
+    # если сообщений больше не осталось и пользователь выбрал меню на
+    if not undeleted_messages:
         # создаем массив данных с записями ключей с инфой о походах
-        records_list = []
-        for key in data:
-            if key.startswith('prod'):
-                records_list.append(key)
-        records_list.sort()
-        # конвертируем ключи в записи данных в массиве
-        for index in range(len(records_list)):
-            records_list[index] = data[records_list[index]]
-
-        await query.message.answer('Формируем pdf и отправляем...')
-
-        # конвертируем данные для общего подсчета и считаем
-        total_data = '\n'.join(records_list)
-        total = utils.meal_total_count(total_data)
-
+        total, daily_menu = utils.get_data_for_pdf(data)
+        total = utils.meal_total_count(total)
         # создание файлика
         utils.pdf_creation(
-            *records_list, filename=query.from_user.id,
+            *daily_menu, filename=query.from_user.id,
             startdate=data['startdate'], enddate=data['enddate'], total=total
         )
         pdf_file = FSInputFile(

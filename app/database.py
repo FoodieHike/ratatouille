@@ -100,7 +100,9 @@ async def get_user_by_name(username):
         username
     )
     if row:
+        await conn.close()
         return row
+    await conn.close()
 
 
 async def create_user(name, password, tguid):
