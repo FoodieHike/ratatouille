@@ -46,23 +46,24 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 @routerCampaign.message(Command('start'))
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()
-    btn_create = InlineKeyboardButton(
-        text='Создать новый поход', callback_data='create'
-    )
-    btn_show = InlineKeyboardButton(
-        text='Показать запись похода', callback_data='show'
-    )
-    btn_menu = InlineKeyboardButton(
-        text='Составить меню для похода', callback_data='food_menu_button'
-    )
-    row = [[btn_create], [btn_show], [btn_menu]]
+    row = [
+        [InlineKeyboardButton(
+            text='Создать новый поход', callback_data='create'
+        )],
+        [InlineKeyboardButton(
+            text='Показать запись похода', callback_data='show'
+        )],
+        [InlineKeyboardButton(
+            text='Составить меню для похода', callback_data='food_menu_button'
+        )]
+    ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=row)
     await message.answer(
-        text='''Привет. Меня зовут Hike Helper.\
- Я помогу тебе разработать меню для твоего похода\
- и рассчитаю все необходимые для него продукты.\
- Выбери, что будем делать дальше:''',
-        reply_markup=mrkp
+        text='Привет. Меня зовут Hike Helper.'
+             'Я помогу тебе разработать меню для твоего похода '
+             'и рассчитаю все необходимые для него продукты.'
+             'Выбери, что будем делать дальше:',
+             reply_markup=mrkp
     )
 
 
@@ -80,21 +81,21 @@ async def camp_create_handler(message: Message, state: FSMContext):
         )
     else:
         await message.answer(
-            '''Добро пожаловать в бот! Пропишите имя пользователя\
-для использования нашего функционала:'''
+            'Добро пожаловать в бот! Пропишите имя пользователя'
+            'для использования нашего функционала:'
         )
         await state.set_state(UserRegistration.register)
 
 
-# хэндлер отрабатывает при внесении в таблицу нового пользователя
+'''# хэндлер отрабатывает при внесении в таблицу нового пользователя
 @routerCampaign.callback_query(DBCreateContext.wait_for_startdate)
 async def process_startdate(query: CallbackQuery, state: FSMContext):
     await query.message.answer(
-        'Выберите дату начала похода!!!пятух: ',
+        'Выберите дату начала Вашего похода: ',
         reply_markup=await SimpleCalendar(
             locale=await get_user_locale(query.from_user)
         ).start_calendar()
-    )
+    )'''
 
 
 # альтернативный обработчик под встроенную кнопку:
@@ -114,8 +115,8 @@ async def create_inline_handler(query: CallbackQuery, state: FSMContext):
         )
     else:
         await query.message.answer(
-            '''Добро пожаловать в бот! Пропишите имя пользователя\
- для использования нашего функционала:'''
+            'Добро пожаловать в бот! Пропишите имя пользователя '
+            'для использования нашего функционала:'
         )
         await state.set_state(UserRegistration.register)
 
@@ -133,8 +134,8 @@ async def registration_handler(message: Message, state: FSMContext):
     user = await database.users_check(tguid=message.from_user.id)
     if user:
         await message.answer(
-            f'''Отлично, {message.text}, \
-теперь можно приступить к записи похода''',
+            f'Отлично, {message.text}, '
+            f'теперь можно приступить к записи похода',
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[[InlineKeyboardButton(
                     text='Перейти к заполнению', callback_data='create',

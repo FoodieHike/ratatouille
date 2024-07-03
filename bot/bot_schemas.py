@@ -1,6 +1,4 @@
 from aiogram.fsm.state import StatesGroup, State
-from datetime import date
-from pydantic import BaseModel
 
 
 # Модели для FSM контекста бота:
@@ -11,10 +9,6 @@ class DBCreateContext(StatesGroup):
     wait_for_lastfood = State()
 
 
-class Menu(StatesGroup):
-    get_to_menu = State()
-
-
 class UserRegistration(StatesGroup):
     register = State()
 
@@ -22,8 +16,3 @@ class UserRegistration(StatesGroup):
 # для записи id
 class ShowStates(StatesGroup):
     putID = State()
-
-
-# Модели для валидации данных:
-class DateValidation(BaseModel):
-    date: date

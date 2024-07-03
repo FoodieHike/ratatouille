@@ -48,8 +48,8 @@ def meal_total_count(data: Union[list, str]):
 # для определения дополнительных приемов пищи
 def extra_meal_counter(record: dict) -> int:
     return {
-        '1': 3, '2': 2, '3': 1
-    }.get(record['firstfood'], '') + int(record['lastfood'])
+        1: 3, 2: 2, 3: 1
+    }.get(record['firstfood'], '') + record['lastfood']
 
 
 # для определения типа приема пищи
@@ -57,7 +57,7 @@ def get_meal_type(meal: Union[str, int]) -> str:
     if type(meal) is int:
         return {1: 'завтрак', 2: 'обед', 3: 'ужин'}.get(meal, '')
     else:
-        if meal.isisdigit():
+        if meal.isdigit():
             int(meal)
             return {1: 'завтрак', 2: 'обед', 3: 'ужин'}.get(meal, '')
         else:
