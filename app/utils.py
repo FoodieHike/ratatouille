@@ -45,6 +45,13 @@ def meal_total_count(data: Union[list, str]):
     return result
 
 
+def syntax_specifier(lenght):
+    lenght = str(lenght)[-1]
+    return {
+        '1': 'день', '2': 'дня', '3': 'дня', '4': 'дня'
+    }.get(lenght, 'дней')
+
+
 # для определения дополнительных приемов пищи
 def extra_meal_counter(record: dict) -> int:
     return {
@@ -81,20 +88,6 @@ async def create_meal_message(
     data[f"message_id{meal_message.message_id}"] = message_value
 
 
-# создает данные для формирования pdf
-def get_data_for_pdf(data: dict) -> list:
-
-    daily_menu_keys = sorted(
-        [key for key in data.keys()
-         if key.startswith('daily_menu')]
-    )
-    daily_menu_list = [data[key] for key in daily_menu_keys]
-
-    # конвертируем данные для общего подсчета и считаем
-    total = '\n'.join(daily_menu_list)
-    return [total, daily_menu_list]
-
-
 # формирует текст меню на день
 def get_daily_menu(
         record: dict,
@@ -119,11 +112,24 @@ def get_daily_menu(
     return [meal_products, meal, day]
 
 
+# создает данные для формирования pdf
+def get_data_for_pdf(data: dict) -> list:
+
+    daily_menu_keys = sorted(
+        [key for key in data.keys()
+         if key.startswith('daily_menu')]
+    )
+    daily_menu_list = [data[key] for key in daily_menu_keys]
+
+    # конвертируем данные для общего подсчета и считаем
+    total = '\n'.join(daily_menu_list)
+    return [total, daily_menu_list]
+
+
 # утилита для создания pdf файла с меню для похода
 def pdf_creation(*meal_products, filename, startdate, enddate, total) -> None:
     # Регистрируем шрифт, поддерживающий кириллицу
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-
     # Регистрация жирного шрифта
     pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
 

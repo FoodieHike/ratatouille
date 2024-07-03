@@ -46,7 +46,7 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 @routerCampaign.message(Command('start'))
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()
-    row = [
+    buttons = [
         [InlineKeyboardButton(
             text='Создать новый поход', callback_data='create'
         )],
@@ -57,7 +57,7 @@ async def start_handler(message: Message, state: FSMContext):
             text='Составить меню для похода', callback_data='food_menu_button'
         )]
     ]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=row)
+    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await message.answer(
         text='Привет. Меня зовут Hike Helper.'
              'Я помогу тебе разработать меню для твоего похода '
@@ -68,54 +68,39 @@ async def start_handler(message: Message, state: FSMContext):
 
 
 # хэндлеры для команды create:
-# стартовый хэндлер:
+# хэндлер под команду:
 @routerCampaign.message(Command('create'))
-async def camp_create_handler(message: Message, state: FSMContext):
-    user = await database.users_check(message.from_user.id)
+async def create_command_handler(message: Message, state: FSMContext):
+    await state.clear()
+    await create_handler(message, state, message=message)
+
+
+# хэндлер под встроенную кнопку:
+@routerCampaign.callback_query(F.data == 'create')
+async def create_button_handler(query: CallbackQuery, state: FSMContext):
+    await create_handler(query, state)
+
+
+async def create_handler(event_type,
+                         state: FSMContext,
+                         message: Message = None):
+    if isinstance(event_type, CallbackQuery):
+        await bot.delete_message(
+            chat_id=event_type.message.chat.id,
+            message_id=event_type.message.message_id
+        )
+        message = event_type.message
+    user = await database.users_check(event_type.from_user.id)
     if user:
         await message.answer(
             'Выберите дату начала похода: ',
             reply_markup=await SimpleCalendar(
-                locale=await get_user_locale(message.from_user)
+                locale=await get_user_locale(event_type.from_user)
             ).start_calendar()
         )
     else:
         await message.answer(
             'Добро пожаловать в бот! Пропишите имя пользователя'
-            'для использования нашего функционала:'
-        )
-        await state.set_state(UserRegistration.register)
-
-
-'''# хэндлер отрабатывает при внесении в таблицу нового пользователя
-@routerCampaign.callback_query(DBCreateContext.wait_for_startdate)
-async def process_startdate(query: CallbackQuery, state: FSMContext):
-    await query.message.answer(
-        'Выберите дату начала Вашего похода: ',
-        reply_markup=await SimpleCalendar(
-            locale=await get_user_locale(query.from_user)
-        ).start_calendar()
-    )'''
-
-
-# альтернативный обработчик под встроенную кнопку:
-@routerCampaign.callback_query(F.data == 'create')
-async def create_inline_handler(query: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=query.message.chat.id, message_id=query.message.message_id
-    )
-
-    user = await database.users_check(tguid=query.from_user.id)
-    if user:
-        await query.message.answer(
-                'Выберите дату: ',
-                reply_markup=await SimpleCalendar(
-                    locale=await get_user_locale(query.from_user)
-                ).start_calendar()
-        )
-    else:
-        await query.message.answer(
-            'Добро пожаловать в бот! Пропишите имя пользователя '
             'для использования нашего функционала:'
         )
         await state.set_state(UserRegistration.register)
@@ -144,7 +129,7 @@ async def registration_handler(message: Message, state: FSMContext):
         )
 
 
-# simple calendar usage - filtering callbacks of calendar format
+# хэндлер для календаря, реагирует на календарные ивенты
 @routerCampaign.callback_query(SimpleCalendarCallback.filter())
 async def process_simple_calendar(
     query: CallbackQuery,
@@ -181,13 +166,12 @@ async def process_simple_calendar(
             await query.message.answer(
                 f'Дата окончания похода {date.strftime("%Y-%m-%d")}'
             )
-            row = [
+            buttons = [[
                 InlineKeyboardButton(text='Завтрак', callback_data='1'),
                 InlineKeyboardButton(text='Обед', callback_data='2'),
                 InlineKeyboardButton(text='Ужин', callback_data='3')
-            ]
-            rows = [row]
-            mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+            ]]
+            mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
             await query.message.answer(
                 'Введите первый прием пищи:', reply_markup=mrkp
             )
@@ -213,13 +197,12 @@ async def process_firstfood(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     data['firstfood'] = int(query.data)
     await state.set_data(data)
-    row = [
+    buttons = [[
         InlineKeyboardButton(text='Завтрак', callback_data='1'),
         InlineKeyboardButton(text='Обед', callback_data='2'),
         InlineKeyboardButton(text='Ужин', callback_data='3')
-    ]
-    rows = [row]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+    ]]
+    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await query.message.answer(
         'Введите последний прием пищи:', reply_markup=mrkp
     )
@@ -251,66 +234,47 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
-    if str(lenght).endswith('1'):
-        await query.message.answer(
-            f'''Спасибо, данные у меня.
-Длительность похода составляет {lenght} день.
-ID Вашей записи - {record['id']}''', reply_markup=mrkp
-        )
-    elif (
-        str(lenght).endswith('2')
-        or str(lenght).endswith('3')
-        or str(lenght).endswith('4')
-    ):
-        await query.message.answer(
-            f'''Спасибо, данные у меня.
-Длительность похода составляет {lenght} дня.
-ID Вашей записи - {record['id']}''', reply_markup=mrkp
-        )
-    else:
-        await query.message.answer(
-            f'''Спасибо, данные у меня.
-Длительность похода составляет {lenght} дней.
-ID Вашей записи - {record['id']}''', reply_markup=mrkp
-        )
-    await state.clear()
 
-
-# Обработчики команды show для просмотра данных из бд:
-# альтернативный обработчик под встроенную кнопку:
-@routerCampaign.callback_query(F.data == 'show')
-async def show_inline_handler(query: CallbackQuery, state: FSMContext):
-    await bot.delete_message(
-        chat_id=query.message.chat.id, message_id=query.message.message_id
+    await query.message.answer(
+        f'Спасибо, данные у меня. '
+        f'Длительность похода составляет {lenght} '
+        f'{utils.syntax_specifier(lenght)}. '
+        f'ID Вашей записи - {record["id"]}',
+        reply_markup=mrkp
     )
     await state.clear()
-    row = [
-        InlineKeyboardButton(
-            text='Показать все записи', callback_data='all'
-        ),
-        InlineKeyboardButton(
-            text='Показать конкретную', callback_data='current'
-        )
-    ]
-    rows = [row]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
-    await query.message.answer(text='Выбирете опцию:', reply_markup=mrkp)
 
 
-# первый хэндлер для начала работы:
-@routerCampaign.message(Command('show'))
-async def get_camp_handler(message: Message, state: FSMContext):
+# кнопочный хэндлер для отображения записи похода
+@routerCampaign.callback_query(F.data == 'show')
+async def show_button_handler(query: CallbackQuery, state: FSMContext):
     await state.clear()
-    row = [
-        InlineKeyboardButton(
-            text='Показать все записи', callback_data='all'
-        ),
-        InlineKeyboardButton(
-            text='Показать конкретную', callback_data='current'
+    await show_handler(query, state)
+
+
+# командный хэндлер для отображения записи похода
+@routerCampaign.message(Command('show'))
+async def show_command_handler(message: Message, state: FSMContext):
+    await state.clear()
+    await show_handler(message, state, message=message)
+
+
+async def show_handler(event_type, state: FSMContext, message: Message = None):
+    if isinstance(event_type, CallbackQuery):
+        await bot.delete_message(
+            chat_id=event_type.message.chat.id,
+            message_id=event_type.message.message_id
         )
+        message = event_type.message
+    buttons = [
+        [InlineKeyboardButton(
+            text='Показать все записи', callback_data='all'
+        )],
+        [InlineKeyboardButton(
+            text='Показать конкретную', callback_data='current'
+        )]
     ]
-    rows = [row]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=rows)
+    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await message.answer(text='Выбирете опцию:', reply_markup=mrkp)
 
 
@@ -379,11 +343,11 @@ async def show_current_process(message: Message, state: FSMContext):
             text='Выйти в меню', callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await message.answer(
-            f'''Ваша запись:\n
-            дата начала похода - {record['startdate']}\n
-            дата окончания похода -  {record['enddate']}\n
-            первый прием пищи - {firstfood}\n
-            последний прием пищи - {lastfood}''',
+            f'Ваша фзапись:\n'
+            f'дата начала похода - {record["startdate"]}\n'
+            f'дата окончания похода -  {record["enddate"]}\n'
+            f'первый прием пищи - {firstfood}\n'
+            f'последний прием пищи - {lastfood}',
             reply_markup=mrkp
         )
     except TypeError:
@@ -398,10 +362,9 @@ async def show_current_process(message: Message, state: FSMContext):
 
 
 # хэндлер для обработки Меню:
-
 @routerCampaign.callback_query(F.data == 'menu_button')
 async def menu_handler(query: CallbackQuery):
-    row = [
+    buttons = [
         [InlineKeyboardButton(
             text='Создать запись', callback_data='create'
         )],
@@ -412,7 +375,7 @@ async def menu_handler(query: CallbackQuery):
             text='Составить меню для похода', callback_data='food_menu_button'
         )]
     ]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=row)
+    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await query.message.answer(
         text='Что будем делать дальше?',
         reply_markup=mrkp
@@ -420,8 +383,6 @@ async def menu_handler(query: CallbackQuery):
 
 
 # хэндлер-заглушка для help:
-
-
 @routerCampaign.message(Command('help'))
 async def help_handler(message: Message, state: FSMContext):
     await state.clear()
