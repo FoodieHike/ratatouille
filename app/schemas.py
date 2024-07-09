@@ -5,18 +5,29 @@ from typing import Union
 
 
 # Для валидации приемов пищи
-class FeedType(int, Enum):
-    breakfast = 1
-    lunch = 2
-    dinner = 3
+class FeedTypes(Enum):
+    BREAKFAST = (1, 'завтрак')
+    LUNCH = (2, 'обед')
+    DINNER = (3, 'ужин')
+
+    def __init__(self, num, meal_name):
+        self.num = num
+        self.meal_name = meal_name
+
+    @classmethod
+    def from_num(cls, num):
+        for item in cls:
+            if item.num == num:
+                return item.meal_name
+        raise ValueError(f"No matching feed type for num: {num}")
 
 
 # Для валидации записей пользователя
 class CampaignBase(BaseModel):
     startdate: date
     enddate: date
-    firstfood: FeedType
-    lastfood: FeedType
+    firstfood: FeedTypes
+    lastfood: FeedTypes
 
 
 # Для валиации взаимодейтвия с пользователем и записи данных в бд

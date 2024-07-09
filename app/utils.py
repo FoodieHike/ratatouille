@@ -6,7 +6,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
-from aiogram.types import InlineKeyboardMarkup, Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery
+
+from schemas import FeedTypes
 
 
 # для подсчета всех продуктов
@@ -52,6 +54,27 @@ def syntax_specifier(lenght):
     }.get(lenght, 'дней')
 
 
+# формирует словарь день: [список приемов пищи]
+# для отправки сообщений пользователю
+def meal_counter(first_meal: int, last_day: int, last_meal: int) -> defaultdict:
+    meals_list = defaultdict(list)
+    marker = False
+    for day in range(1, last_day+1):
+        if day == last_day:
+            for meal in FeedTypes:
+                if meal.num == last_meal:
+                    meals_list[day].append(meal.meal_name)
+                    break
+                meals_list[day].append(meal.meal_name)
+        else:
+            for meal in FeedTypes:
+                if meal.num == first_meal:
+                    marker = True
+                if marker:
+                    meals_list[day].append(meal.meal_name)
+    return meals_list
+
+
 # для определения дополнительных приемов пищи
 def extra_meal_counter(record: dict) -> int:
     return {
@@ -59,29 +82,13 @@ def extra_meal_counter(record: dict) -> int:
     }.get(record['firstfood'], '') + record['lastfood']
 
 
-# для определения типа приема пищи
-def get_meal_type(meal: Union[str, int]) -> str:
-    if type(meal) is int:
-        return {1: 'завтрак', 2: 'обед', 3: 'ужин'}.get(meal, '')
-    else:
-        if meal.isdigit():
-            int(meal)
-            return {1: 'завтрак', 2: 'обед', 3: 'ужин'}.get(meal, '')
-        else:
-            return {'завтрак': 1, 'обед': 2, 'ужин': 3}.get(meal, '')
-
-
 # Создает инфу о сообщении и отсылает сообщение со списком блюд пользователю
-async def create_meal_message(
+def put_message_into_state(
     day: Union[int, str],
-    mrkp: InlineKeyboardMarkup,
-    message: Message,
+    meal_message: Message,
     data: dict,
     feed_type: Union[int, str]
 ) -> None:
-    meal_message = await message.answer(
-        f"День {day};  Прием пищи - {feed_type}", reply_markup=mrkp
-    )
     message_value = f"{day}${feed_type}"
     # прописываем в соловарь состояний
     # номер сообщения с привязанным к нему приемом пищи
@@ -105,7 +112,6 @@ def get_daily_menu(
     # и разделяем их
     day_meal_per_message = data[f'message_id{query.message.message_id}']
     day, meal = day_meal_per_message.split('$')
-    meal = get_meal_type(meal)
     meal_products = (f'День похода - {day}, '
                      f'прием пищи - {meal}.'
                      f'\n({feed_name}):\n{daily_menu}')
@@ -113,7 +119,7 @@ def get_daily_menu(
 
 
 # создает данные для формирования pdf
-def get_data_for_pdf(data: dict) -> list:
+def get_data_for_pdf(data: dict) -> tuple:
 
     daily_menu_keys = sorted(
         [key for key in data.keys()
@@ -123,7 +129,7 @@ def get_data_for_pdf(data: dict) -> list:
 
     # конвертируем данные для общего подсчета и считаем
     total = '\n'.join(daily_menu_list)
-    return [total, daily_menu_list]
+    return (total, daily_menu_list)
 
 
 # утилита для создания pdf файла с меню для похода

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 from sqlalchemy.ext.asyncio import create_async_engine
+from starlette.middleware.sessions import SessionMiddleware
 
 
 from models import User, Campaign
@@ -9,6 +10,7 @@ from auth import AdminAuth
 
 app = FastAPI()
 
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, httponly=True)
 
 engine = create_async_engine(
     f'''postgresql+asyncpg://{CONN_PARAMS['user']}:\

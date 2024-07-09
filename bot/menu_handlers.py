@@ -27,34 +27,32 @@ class ChooseIDStates(StatesGroup):
 
 # хэндлеры для рассчета меню
 
-# хэндлер для начала работы с меню
-@routerMenu.callback_query(F.data == 'food_menu_button')
-async def callback_menu_handller(query: CallbackQuery, state: FSMContext):
-    row = [[InlineKeyboardButton(
-        text='Выбрать по ID', callback_data='chooseID'
-    )],
-           [InlineKeyboardButton(
-               text='Последняя запись', callback_data='lastone'
-           )]]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await query.message.answer(
-        '''Меню для конкретного похода,\
- или возьмем последнюю запись?''', reply_markup=mrkp
-    )
+# хэндлер меню для кнопки
+@routerMenu.callback_query(F.data == 'menu')
+async def menu_button_handller(query: CallbackQuery, state: FSMContext):
+    await menu_handler(query, query.message, state)
     await state.clear()
 
 
-# хэндлер для начала работы с меню (через команду)
+# хэндлер меню для команды
 @routerMenu.message(Command('menu'))
-async def menu_handller(message: Message, state: FSMContext):
-    row = [[InlineKeyboardButton(
+async def menu_command_handller(message: Message, state: FSMContext):
+    await menu_handler(message, message, state)
+    await state.clear()
+
+
+async def menu_handler(event_type, message: Message, state: FSMContext):
+    if isinstance(event_type, CallbackQuery):
+        message = event_type.message
+    buttons = [[InlineKeyboardButton(
         text='Выбрать по ID', callback_data='chooseID'
     )], [InlineKeyboardButton(
         text='Последняя запись', callback_data='lastone'
     )]]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=row)
-    await message.answer('''Меню для конкретного похода,\
- или возьмем последнюю запись?''', reply_markup=mrkp)
+    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await message.answer('Меню для конкретного похода,'
+                         'или возьмем последнюю запись?',
+                         reply_markup=mrkp)
     await state.clear()
 
 
@@ -98,6 +96,7 @@ async def choose_id_handler(message: Message, state: FSMContext):
 async def menu_process(message: Message, state: FSMContext):
     data = await state.get_data()
     data['people_amount'] = int(message.text)
+    data['feedtypes_amount'] = []
 
     # определение дней с полным набором приемов пищи
     full_days = data['days_amount']-2
@@ -111,7 +110,7 @@ async def menu_process(message: Message, state: FSMContext):
     )
 
     first_meal = data['firstfood']
-    days_amount = data['days_amount']
+    last_day = data['days_amount']
     last_meal = data['lastfood']
 
     records = await database.get_menu_all()
@@ -125,30 +124,17 @@ async def menu_process(message: Message, state: FSMContext):
         for name, feedtype in feednames_dict.items()
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
+    meals = utils.meal_counter(first_meal, last_day, last_meal)
 
-    for day in range(1, days_amount+1):
-        if day == days_amount:
-            for meal in range(1, last_meal + 1):
-                await utils.create_meal_message(
-                    day,
-                    mrkp,
-                    message,
-                    data,
-                    feed_type=utils.get_meal_type(meal)
-                )
-        else:
-            for meal in range(first_meal, 4):
-                await utils.create_meal_message(
-                    day,
-                    mrkp,
-                    message,
-                    data,
-                    feed_type=utils.get_meal_type(meal)
-                )
-                first_meal += 1
-                if first_meal > 3:
-                    first_meal = 1
-                    break
+    for day_n_meals in meals.items():
+        for meal in day_n_meals[1]:
+            meal_message = await message.answer(
+                        f"День {day_n_meals[0]};  Прием пищи - {meal}",
+                        reply_markup=mrkp
+                    )
+            utils.put_message_into_state(
+                day_n_meals[0], meal_message, data, meal
+            )
     await state.set_data(data)
 
 
@@ -162,12 +148,12 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
         lenght = record['enddate']-record['startdate']
 
     except TypeError:
-        row = [[InlineKeyboardButton(
+        buttons = [[InlineKeyboardButton(
             text='Создать запись', callback_data='create'
         )], [InlineKeyboardButton(
             text='Вернуться в меню', callback_data='menu_button'
         )]]
-        mrkp = InlineKeyboardMarkup(inline_keyboard=row)
+        mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
         await query.message.answer(
             '''К сожалению не удалось найти ни одной
                 записи. Может хотите создать новую?''', reply_markup=mrkp
@@ -195,6 +181,7 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 @routerMenu.callback_query(F.data.startswith('B'))
 async def feedtype_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
+    data['feedtypes_amount'].append(query.data)
     record = await database.get_menu(feedtype=query.data)
     meal_products, meal, day = utils.get_daily_menu(record, data, query)
 
@@ -218,6 +205,7 @@ async def feedtype_handler(query: CallbackQuery, state: FSMContext):
     ]
     # если сообщений больше не осталось и пользователь выбрал меню на
     if not undeleted_messages:
+        await query.message.answer(f'meals list: {data["feedtypes_amount"]}')
         # создаем массив данных с записями ключей с инфой о походах
         total, daily_menu = utils.get_data_for_pdf(data)
         total = utils.meal_total_count(total)

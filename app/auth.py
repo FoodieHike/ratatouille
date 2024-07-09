@@ -68,8 +68,6 @@ def create_access_token(
     return encoded_jwt
 
 
-# Update get_current_user to receive the same token as before,
-# but this time, using JWT tokens.
 async def get_current_user(token: str):
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

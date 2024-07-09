@@ -20,6 +20,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import app.utils as utils
 import app.database as database
 from bot_schemas import DBCreateContext, UserRegistration, ShowStates
+from app.schemas import FeedTypes
 
 from dotenv import load_dotenv
 
@@ -54,7 +55,7 @@ async def start_handler(message: Message, state: FSMContext):
             text='Показать запись похода', callback_data='show'
         )],
         [InlineKeyboardButton(
-            text='Составить меню для похода', callback_data='food_menu_button'
+            text='Составить меню для похода', callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -230,7 +231,7 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
         )],
         [InlineKeyboardButton(
             text='Заполнить меню для похода',
-            callback_data='food_menu_button'
+            callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
@@ -295,8 +296,8 @@ async def show_all_handler(query: CallbackQuery):
             f'\nID записи - {row["id"]}; '
             f'\nдата начала похода - {row["startdate"]}; '
             f'\nдата окончания похода - {row["enddate"]};'
-            f'\nпервый прием пищи - {utils.get_meal_type(row["firstfood"])}; '
-            f'последний прием пищи - {utils.get_meal_type(row["lastfood"])}\n'
+            f'\nпервый прием пищи - {FeedTypes.from_num(int(row["firstfood"]))}; '
+            f'последний прием пищи - {FeedTypes.from_num(int(row["firstfood"]))}\n'
             for count, row in enumerate(record)
         ]
 
@@ -336,8 +337,8 @@ async def show_current_process(message: Message, state: FSMContext):
         record = await database.get_campaign_by_id(
             tguid=message.from_user.id, record_id=message.text
         )
-        firstfood = utils.get_meal_type(record['firstfood'])
-        lastfood = utils.get_meal_type(record['lastfood'])
+        firstfood = FeedTypes.from_num(int(record['firstfood']))
+        lastfood = FeedTypes.from_num(int(record['lastfood']))
 
         btn = [[InlineKeyboardButton(
             text='Выйти в меню', callback_data='menu_button')]]
@@ -372,7 +373,7 @@ async def menu_handler(query: CallbackQuery):
             text='Показать запись', callback_data='show'
         )],
         [InlineKeyboardButton(
-            text='Составить меню для похода', callback_data='food_menu_button'
+            text='Составить меню для похода', callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
