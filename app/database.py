@@ -175,7 +175,10 @@ async def get_total_menu(multiplier, data):
 async def get_daily_menu(multiplier, feedtype):
     conn = await asyncpg.connect(**CONN_PARAMS)
     row = await conn.fetch(
-        '''SELECT feedname, productname, quantity * $1 as quantity, units, feedname
+        '''SELECT feedname,
+        productname,
+        quantity * $1 as quantity,
+        units, feedname
         FROM menu
         WHERE feedtype=$2''',
         multiplier,

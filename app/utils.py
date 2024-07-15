@@ -1,50 +1,9 @@
-import re
 from collections import defaultdict
 from typing import Union
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
 from aiogram.types import Message, CallbackQuery
 
 from schemas import FeedTypes
-
-
-# для подсчета всех продуктов
-def meal_total_count(data: Union[list, str]):
-    if not isinstance(data, list):
-        data = [data]
-
-    product_groups = defaultdict(int)
-    # Шаблон для выделения строки с продуктами и количествами
-    product_row = re.compile(r'(\d+ [^\n]+)')
-    # Шаблон для выделения чисел
-    digits = re.compile(r'\d+')
-
-    for item in data:
-        # Находим строки с продуктами и количествами
-        products = product_row.findall(item)
-        for product in products:
-            # Выделяем название продукта
-            clean_product = re.sub(r'\d+ ', '', product)
-            # Подсчитываем сумму всех количеств
-            amount = sum(map(int, digits.findall(product)))
-            # Суммируем количества для каждого продукта
-            product_groups[clean_product] += amount
-
-    # Конвертируем ключи и значения словаря в строки
-    # и объединяем их одной строкой
-    converted = '\n'.join(
-        f'{key}, {value}'
-        for key, value in product_groups.items()
-    )
-
-    # Переносим единицы измерения в конец строки
-    pattern = r'^(гр|шт)\s+(.*?)(?:\s+\1)?$'
-    result = re.sub(pattern, r'\2 \1', converted, flags=re.MULTILINE)
-
-    return result
 
 
 def syntax_specifier(lenght):
@@ -56,7 +15,11 @@ def syntax_specifier(lenght):
 
 # формирует словарь день: [список приемов пищи]
 # для отправки сообщений пользователю
-def meal_counter(first_meal: int, last_day: int, last_meal: int) -> defaultdict:
+def meal_counter(
+        first_meal: int,
+        last_day: int,
+        last_meal: int
+) -> defaultdict:
     meals_list = defaultdict(list)
     marker = False
     for day in range(1, last_day+1):
@@ -96,7 +59,10 @@ def put_message_into_state(
 
 
 def data_from_db_converter(record_from_db):
-    converted_data = '\n'.join([f'{row["productname"]} {row["quantity"]} {row["units"]}' for  row in record_from_db])
+    converted_data = '\n'.join(
+        [f'{row["productname"]} {row["quantity"]} {row["units"]}'
+         for row in record_from_db]
+    )
     return converted_data
 
 
@@ -117,6 +83,7 @@ def get_daily_menu_titled(
                      f'\n({feed_name}):\n{daily_menu}')
     return [meal_products, meal, day]
 
+
 # для подсчета всех дневных меню
 def total_by_feedtype(data: dict, feedtypes: list) -> None:
     inner_data = defaultdict(int)
@@ -130,8 +97,8 @@ def total_by_feedtype(data: dict, feedtypes: list) -> None:
 
 # создает данные для формирования pdf
 def sort_daily_menu(data: dict) -> tuple:
-    # здесь повезло, что сорртировка лексически 
-    # распределит слова в правильном порядке, 
+    # здесь повезло, что сорртировка лексически
+    # распределит слова в правильном порядке,
     # нет необходимости нагружать лишней логикой
     daily_menu_keys = sorted(
         [key for key in data.keys()
@@ -152,5 +119,3 @@ def feedtypes_counter(data: dict, feedtypes: list) -> None:
         else:
             inner_data[i] += 1
     data['feedtypes_amount'] = inner_data
-
-

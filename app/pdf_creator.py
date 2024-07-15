@@ -4,7 +4,6 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 
 
-
 # утилита для создания pdf файла с меню для похода
 def pdf_creation(*daily_menu, filename, startdate, enddate, total) -> None:
     # Регистрируем шрифт, поддерживающий кириллицу
