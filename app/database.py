@@ -138,3 +138,48 @@ async def get_menu_all():
     )
     await conn.close()
     return row
+
+
+async def get_total_menu(multiplier, data):
+    conn = await asyncpg.connect(**CONN_PARAMS)
+    feedtype_keys = data["feedtypes_amount"].keys()
+    case_expressions = ' '.join(
+        [f'WHEN feedtype = ${i[0] + 2} '
+         f'THEN {data["feedtypes_amount"][i[1]]}'
+         for i in enumerate(data['feedtypes_amount'])]
+    )
+    feedtypes_amount = ', '.join(
+        [f'${num + 2 + len(data["feedtypes_amount"])}'
+         for num in range(len(data['feedtypes_amount']))]
+    )
+
+    query = f'''
+        SELECT
+            ProductName,
+            SUM(Quantity * $1 * (
+                CASE {case_expressions} END
+            )) AS Quantity,
+            Units
+        FROM menu
+        WHERE FeedType IN ({feedtypes_amount})
+        GROUP BY ProductName, Units
+        ORDER BY ProductName;
+    '''
+
+    row = await conn.fetch(query, multiplier, *feedtype_keys, *feedtype_keys)
+    await conn.close()
+
+    return row
+
+
+async def get_daily_menu(multiplier, feedtype):
+    conn = await asyncpg.connect(**CONN_PARAMS)
+    row = await conn.fetch(
+        '''SELECT feedname, productname, quantity * $1 as quantity, units, feedname
+        FROM menu
+        WHERE feedtype=$2''',
+        multiplier,
+        feedtype
+    )
+    await conn.close()
+    return row

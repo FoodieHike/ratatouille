@@ -95,18 +95,18 @@ def put_message_into_state(
     data[f"message_id{meal_message.message_id}"] = message_value
 
 
+def data_from_db_converter(record_from_db):
+    converted_data = '\n'.join([f'{row["productname"]} {row["quantity"]} {row["units"]}' for  row in record_from_db])
+    return converted_data
+
+
 # формирует текст меню на день
-def get_daily_menu(
+def get_daily_menu_titled(
         record: dict,
         data: dict,
         query: CallbackQuery
 ) -> list:
-    menu_text = [
-        f"{row['quantity']*data['people_amount']} "
-        f"{row['units']} {row['productname']}"
-        for row in record
-    ]
-    daily_menu = '\n'.join(menu_text)
+    daily_menu = data_from_db_converter(record)
     feed_name = record[0]['feedname']
     # достаем из хранилища состояний сообщение о приеме пищи и дне
     # и разделяем их
@@ -117,10 +117,22 @@ def get_daily_menu(
                      f'\n({feed_name}):\n{daily_menu}')
     return [meal_products, meal, day]
 
+# для подсчета всех дневных меню
+def total_by_feedtype(data: dict, feedtypes: list) -> None:
+    inner_data = defaultdict(int)
+    for i in feedtypes:
+        if i not in inner_data.keys():
+            inner_data[i] = 1
+        else:
+            inner_data[i] += 1
+    data['feedtypes_amount'] = inner_data
+
 
 # создает данные для формирования pdf
-def get_data_for_pdf(data: dict) -> tuple:
-
+def sort_daily_menu(data: dict) -> tuple:
+    # здесь повезло, что сорртировка лексически 
+    # распределит слова в правильном порядке, 
+    # нет необходимости нагружать лишней логикой
     daily_menu_keys = sorted(
         [key for key in data.keys()
          if key.startswith('daily_menu')]
@@ -128,92 +140,17 @@ def get_data_for_pdf(data: dict) -> tuple:
     daily_menu_list = [data[key] for key in daily_menu_keys]
 
     # конвертируем данные для общего подсчета и считаем
-    total = '\n'.join(daily_menu_list)
-    return (total, daily_menu_list)
+    # total = '\n'.join(daily_menu_list)
+    return daily_menu_list
 
 
-# утилита для создания pdf файла с меню для похода
-def pdf_creation(*meal_products, filename, startdate, enddate, total) -> None:
-    # Регистрируем шрифт, поддерживающий кириллицу
-    pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-    # Регистрация жирного шрифта
-    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+def feedtypes_counter(data: dict, feedtypes: list) -> None:
+    inner_data = defaultdict(int)
+    for i in feedtypes:
+        if i not in inner_data.keys():
+            inner_data[i] = 1
+        else:
+            inner_data[i] += 1
+    data['feedtypes_amount'] = inner_data
 
-    pdf_catalog = f'/pdf_files/hike_menu_{filename}.pdf'
 
-    # Создаем объект canvas с размером страницы A4
-    page = canvas.Canvas(pdf_catalog, pagesize=A4)
-    width, height = A4  # Ширина и высота страницы A4
-
-    # Начальная позиция
-    y_position = height - 50
-
-    # Добавляем изображение
-    image_path = '/images/bot_logo.png'
-    page.drawImage(image_path, x=200, y=y_position-100, width=180, height=150)
-
-    # Заголовок
-    title = f'Походное меню (период с {startdate} по {enddate})'
-
-    y_position -= 150
-    # Установка жирного шрифта
-    page.setFont('DejaVuSans-Bold', 12)
-
-    for row in title.split('\n'):
-        page.drawString(120, y_position, row)
-
-    # Устанавливаем шрифт и размер
-    page.setFont('DejaVuSans', 12)
-    if y_position > 50:
-        for row in meal_products:
-
-            # Добавляем текст после изображения
-            y_position -= 50  # Смещаем позицию для текста после изображения
-            for product in row.split('\n'):
-                page.drawString(50, y_position,  product)
-                y_position -= 15
-                if y_position < 50:
-                    page.showPage()
-                    y_position = 800
-                    page.setFont('DejaVuSans', 12)
-    else:
-        page.showPage()
-        y_position = 800
-
-    fin = 'Общее количество всех продуктов на поход'
-
-    y_position -= 100
-
-    # Установка жирного шрифта
-    page.setFont('DejaVuSans-Bold', 12)
-
-    if y_position > 80:
-        for row in fin.split('\n'):
-            page.drawString(120, y_position, row)
-    else:
-        page.showPage()
-        y_position = 800
-        # Установка жирного шрифта
-        page.setFont('DejaVuSans-Bold', 12)
-        for row in fin.split('\n'):
-            page.drawString(120, y_position, row)
-
-    y_position -= 30
-    # Устанавливаем шрифт и размер
-    page.setFont('DejaVuSans', 12)
-    if y_position > 50:
-        for row in total.split('\n'):
-            page.drawString(50, y_position,  row)
-            y_position -= 15
-            if y_position < 50:
-                page.showPage()
-                y_position = 800
-                page.setFont('DejaVuSans', 12)
-    else:
-        page.showPage()
-        y_position = 800
-
-    # Завершаем
-    # страницу и сохраняем PDF
-    page.showPage()
-    page.save()

@@ -12,6 +12,7 @@ import sys
 
 import app.database as database
 import app.utils as utils
+from app.pdf_creator import pdf_creation
 from campaign_handlers import bot
 
 
@@ -182,8 +183,9 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 async def feedtype_handler(query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     data['feedtypes_amount'].append(query.data)
-    record = await database.get_menu(feedtype=query.data)
-    meal_products, meal, day = utils.get_daily_menu(record, data, query)
+    record = await database.get_daily_menu(data['people_amount'], query.data)
+    meal_products, meal, day = utils.get_daily_menu_titled(record, data, query)
+    day, meal = data[f'message_id{query.message.message_id}'].split('$')
 
     # формирование ключа для записи в pdf
     # в значении текст дневного меню
@@ -205,12 +207,13 @@ async def feedtype_handler(query: CallbackQuery, state: FSMContext):
     ]
     # если сообщений больше не осталось и пользователь выбрал меню на
     if not undeleted_messages:
-        await query.message.answer(f'meals list: {data["feedtypes_amount"]}')
+        utils.total_by_feedtype(data, data['feedtypes_amount'])
         # создаем массив данных с записями ключей с инфой о походах
-        total, daily_menu = utils.get_data_for_pdf(data)
-        total = utils.meal_total_count(total)
+        daily_menu = utils.sort_daily_menu(data)
+        total = await database.get_total_menu(data['people_amount'], data)
+        total = utils.data_from_db_converter(total)
         # создание файлика
-        utils.pdf_creation(
+        pdf_creation(
             *daily_menu, filename=query.from_user.id,
             startdate=data['startdate'], enddate=data['enddate'], total=total
         )

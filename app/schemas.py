@@ -20,7 +20,14 @@ class FeedTypes(Enum):
             if item.num == num:
                 return item.meal_name
         raise ValueError(f"No matching feed type for num: {num}")
-
+    
+    @classmethod
+    def from_string(cls, meal_name):
+        for item in cls:
+            if item.meal_name == meal_name:
+                return item.num
+        raise ValueError(f"No matching feed type for num: {meal_name}")
+            
 
 # Для валидации записей пользователя
 class CampaignBase(BaseModel):
