@@ -58,7 +58,7 @@ def put_message_into_state(
     data[f"message_id{meal_message.message_id}"] = message_value
 
 
-def data_from_db_converter(record_from_db):
+def data_from_db_converter(record_from_db: dict) -> str:
     converted_data = '\n'.join(
         [f'{row["productname"]} {row["quantity"]} {row["units"]}'
          for row in record_from_db]
@@ -66,12 +66,12 @@ def data_from_db_converter(record_from_db):
     return converted_data
 
 
-# формирует текст меню на день
+# формирует текст с заголовком и меню на день
 def get_daily_menu_titled(
         record: dict,
         data: dict,
         query: CallbackQuery
-) -> list:
+) -> tuple:
     daily_menu = data_from_db_converter(record)
     feed_name = record[0]['feedname']
     # достаем из хранилища состояний сообщение о приеме пищи и дне
@@ -81,7 +81,7 @@ def get_daily_menu_titled(
     meal_products = (f'День похода - {day}, '
                      f'прием пищи - {meal}.'
                      f'\n({feed_name}):\n{daily_menu}')
-    return [meal_products, meal, day]
+    return (meal_products, meal, day)
 
 
 # для подсчета всех дневных меню
@@ -96,7 +96,7 @@ def total_by_feedtype(data: dict, feedtypes: list) -> None:
 
 
 # создает данные для формирования pdf
-def sort_daily_menu(data: dict) -> tuple:
+def sort_daily_menu(data: dict) -> list:
     # здесь повезло, что сорртировка лексически
     # распределит слова в правильном порядке,
     # нет необходимости нагружать лишней логикой
@@ -111,6 +111,8 @@ def sort_daily_menu(data: dict) -> tuple:
     return daily_menu_list
 
 
+# создает из списка менюшек словарь
+# с ключем feedtype значением количеством этих приемов пищи
 def feedtypes_counter(data: dict, feedtypes: list) -> None:
     inner_data = defaultdict(int)
     for i in feedtypes:

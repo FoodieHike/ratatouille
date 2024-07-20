@@ -4,6 +4,8 @@ uvicorn==0.28.0
 
 # Для соединения с бд
 asyncpg==0.29.0
+psycopg2==2.9.9
+SQLAlchemy==2.0.31
 
 pydantic
 
