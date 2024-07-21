@@ -62,18 +62,6 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: food_db
     restart: no
-  insert_data:
-    build: .
-    command: python insert_data.py
-    volumes:
-      - ./app:/app
-    depends_on:
-      - migrations
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: food_db
-    restart: no
   pgadmin:
     image: dpage/pgadmin4
     restart: always

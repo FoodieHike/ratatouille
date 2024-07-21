@@ -10,7 +10,7 @@ from auth import AdminAuth
 
 app = FastAPI()
 
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, httponly=True)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, https_only=True)
 
 engine = create_async_engine(
     f'''postgresql+asyncpg://{CONN_PARAMS['user']}:\
