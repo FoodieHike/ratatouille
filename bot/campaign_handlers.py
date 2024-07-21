@@ -344,7 +344,7 @@ async def show_current_process(message: Message, state: FSMContext):
             text='Выйти в меню', callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await message.answer(
-            f'Ваша фзапись:\n'
+            f'Ваша запись:\n'
             f'дата начала похода - {record["startdate"]}\n'
             f'дата окончания похода -  {record["enddate"]}\n'
             f'первый прием пищи - {firstfood}\n'

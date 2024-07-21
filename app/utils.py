@@ -60,7 +60,7 @@ def put_message_into_state(
 
 def data_from_db_converter(record_from_db: dict) -> str:
     converted_data = '\n'.join(
-        [f'{row["productname"]} {row["quantity"]} {row["units"]}'
+        [f'{row["product_name"]} {row["quantity"]} {row["units"]}'
          for row in record_from_db]
     )
     return converted_data
@@ -73,7 +73,7 @@ def get_daily_menu_titled(
         query: CallbackQuery
 ) -> tuple:
     daily_menu = data_from_db_converter(record)
-    feed_name = record[0]['feedname']
+    feed_name = record[0]['feed_name']
     # достаем из хранилища состояний сообщение о приеме пищи и дне
     # и разделяем их
     day_meal_per_message = data[f'message_id{query.message.message_id}']

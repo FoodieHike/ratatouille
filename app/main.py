@@ -26,7 +26,7 @@ async def create_campaign(campaign: schemas.CampaignCreate):
     new_campaign = await database.create_campaign(campaign)
     if new_campaign:
         return new_campaign
-    raise HTTPException(status_code=404, detail='Not found')
+    raise HTTPException(status_code=400, detail='Bad Request')
 
 
 @app.get('/')

@@ -96,47 +96,51 @@ async def choose_id_handler(message: Message, state: FSMContext):
 @routerMenu.message(ChooseIDStates.wait_for_people_amount)
 async def menu_process(message: Message, state: FSMContext):
     data = await state.get_data()
-    data['people_amount'] = int(message.text)
-    data['feedtypes_amount'] = []
+    try:
+        data['people_amount'] = int(message.text)
+        data['feedtypes_amount'] = []
 
-    # определение дней с полным набором приемов пищи
-    full_days = data['days_amount']-2
-    feeds = full_days*3        # количество приемов в полных днях
-    # количество приемов пищи
-    meals_full_amount = feeds+data['extra_meal']
-    await message.answer(
-        f'В этом походе, у вас получается всего'
-        f' {meals_full_amount} приемов пищи.'
-        f'\nДавайте определим, что вы будете в них есть.'
-    )
+        # определение дней с полным набором приемов пищи
+        full_days = data['days_amount']-2
+        feeds = full_days*3        # количество приемов в полных днях
+        # количество приемов пищи
+        meals_full_amount = feeds+data['extra_meal']
+        await message.answer(
+            f'В этом походе, у вас получается всего'
+            f' {meals_full_amount} приемов пищи.'
+            f'\nДавайте определим, что вы будете в них есть.'
+        )
 
-    first_meal = data['firstfood']
-    last_day = data['days_amount']
-    last_meal = data['lastfood']
+        first_meal = data['firstfood']
+        last_day = data['days_amount']
+        last_meal = data['lastfood']
 
-    records = await database.get_menu_all()
-    feednames_dict = {
-        record['feedname']: record['feedtype'] for record in records
-    }
+        records = await database.get_menu_all()
+        feednames_dict = {
+            record['feed_name']: record['feed_type'] for record in records
+        }
 
-    # Устанавливаем клавиатуру с меню для каждого сообщения
-    buttons = [
-        [InlineKeyboardButton(text=name, callback_data=feedtype)]
-        for name, feedtype in feednames_dict.items()
-    ]
-    mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
-    meals = utils.meal_counter(first_meal, last_day, last_meal)
+        # Устанавливаем клавиатуру с меню для каждого сообщения
+        buttons = [
+            [InlineKeyboardButton(text=name, callback_data=feedtype)]
+            for name, feedtype in feednames_dict.items()
+        ]
+        mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
+        meals = utils.meal_counter(first_meal, last_day, last_meal)
 
-    for day_n_meals in meals.items():
-        for meal in day_n_meals[1]:
-            meal_message = await message.answer(
-                        f"День {day_n_meals[0]};  Прием пищи - {meal}",
-                        reply_markup=mrkp
-                    )
-            utils.put_message_into_state(
-                day_n_meals[0], meal_message, data, meal
-            )
-    await state.set_data(data)
+        for day_n_meals in meals.items():
+            for meal in day_n_meals[1]:
+                meal_message = await message.answer(
+                            f"День {day_n_meals[0]};  Прием пищи - {meal}",
+                            reply_markup=mrkp
+                        )
+                utils.put_message_into_state(
+                    day_n_meals[0], meal_message, data, meal
+                )
+        await state.set_data(data)
+    except ValueError:
+        await message.answer('Неверный формат данных! Необходимо ввести количество человек в цифрах.')
+    
 
 
 # хэндлер для предоставления последней записи

@@ -122,9 +122,9 @@ async def create_user(name, password, tguid):
 async def get_menu(feedtype):
     conn = await asyncpg.connect(**CONN_PARAMS)
     row = await conn.fetch(
-        '''SELECT productname, quantity, units, feedname
+        '''SELECT product_name, quantity, units, feed_name
         FROM menu
-        WHERE feedtype=$1''',
+        WHERE feed_type=$1''',
         feedtype
     )
     await conn.close()
@@ -144,7 +144,7 @@ async def get_total_menu(multiplier, data):
     conn = await asyncpg.connect(**CONN_PARAMS)
     feedtype_keys = data["feedtypes_amount"].keys()
     case_expressions = ' '.join(
-        [f'WHEN feedtype = ${i[0] + 2} '
+        [f'WHEN feed_type = ${i[0] + 2} '
          f'THEN {data["feedtypes_amount"][i[1]]}'
          for i in enumerate(data['feedtypes_amount'])]
     )
@@ -155,15 +155,15 @@ async def get_total_menu(multiplier, data):
 
     query = f'''
         SELECT
-            ProductName,
+            product_name,
             SUM(Quantity * $1 * (
                 CASE {case_expressions} END
             )) AS Quantity,
             Units
         FROM menu
-        WHERE FeedType IN ({feedtypes_amount})
-        GROUP BY ProductName, Units
-        ORDER BY ProductName;
+        WHERE feed_type IN ({feedtypes_amount})
+        GROUP BY product_name, Units
+        ORDER BY product_name;
     '''
 
     row = await conn.fetch(query, multiplier, *feedtype_keys, *feedtype_keys)
@@ -175,12 +175,12 @@ async def get_total_menu(multiplier, data):
 async def get_daily_menu(multiplier, feedtype):
     conn = await asyncpg.connect(**CONN_PARAMS)
     row = await conn.fetch(
-        '''SELECT feedname,
-        productname,
+        '''SELECT feed_name,
+        product_name,
         quantity * $1 as quantity,
-        units, feedname
+        units, feed_name
         FROM menu
-        WHERE feedtype=$2''',
+        WHERE feed_type=$2''',
         multiplier,
         feedtype
     )
