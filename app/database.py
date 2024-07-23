@@ -8,12 +8,13 @@ async def create_campaign(campaign):
     conn = await asyncpg.connect(**CONN_PARAMS)
     await conn.execute(
         '''INSERT INTO campaigns (startdate, enddate,
-            firstfood, lastfood)
-            VALUES ($1, $2, $3, $4);''',
+            firstfood, lastfood, user_tg_id)
+            VALUES ($1, $2, $3, $4, $5);''',
         campaign.startdate,
         campaign.enddate,
         campaign.firstfood,
         campaign.lastfood,
+        campaign.user_tg_id
     )
     row = await conn.fetchrow(
         '''SELECT * FROM campaigns

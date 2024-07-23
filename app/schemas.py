@@ -25,21 +25,21 @@ class FeedTypes(Enum):
         for item in cls:
             if item.meal_name == meal_name:
                 return item.num
-        raise ValueError(f"No matching feed type for num: {meal_name}")
+        raise ValueError(f"No matching feed type for entity: {meal_name}")
 
 
 # Для валидации записей пользователя
 class CampaignBase(BaseModel):
     startdate: date
     enddate: date
-    firstfood: FeedTypes
-    lastfood: FeedTypes
+    firstfood: int
+    lastfood: int
 
 
 # Для валиации взаимодейтвия с пользователем и записи данных в бд
 # (тута будем добавлять всякое)
 class CampaignCreate(CampaignBase):
-    pass
+    user_tg_id: int
 
 
 # Для доставания записей из campaign
@@ -47,12 +47,8 @@ class Campaign(CampaignBase):
     id: int
 
 
-class UserReg(BaseModel):
-    name: str
-    password: str
-
-
 # Для валидации данных для авторизации пользователей
+# (пока нет необходимости, возможно позже модернизирую регистрацию)
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -63,11 +59,11 @@ class TokenData(BaseModel):
 
 
 class User(BaseModel):
+    id: int
     username: str
-    tg_id: int = None
-    email: str = None
-    full_name: str = None
-    disabled: bool = None
+    password: str
+    tg_id: int
+    disabled: bool
 
 
 class UserInDB(User):

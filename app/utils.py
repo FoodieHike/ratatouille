@@ -105,9 +105,6 @@ def sort_daily_menu(data: dict) -> list:
          if key.startswith('daily_menu')]
     )
     daily_menu_list = [data[key] for key in daily_menu_keys]
-
-    # конвертируем данные для общего подсчета и считаем
-    # total = '\n'.join(daily_menu_list)
     return daily_menu_list
 
 
