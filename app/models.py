@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Integer, Date, CheckConstraint, ForeignKey, Boolean
+from sqlalchemy import String, Integer, Date, CheckConstraint, ForeignKey, Boolean, BigInteger
 
 
 class Base(DeclarativeBase):
@@ -17,7 +17,7 @@ class User(Base):
         String(255), unique=True, nullable=False
     )
     tg_id: Mapped[int] = mapped_column(
-        Integer, unique=True, nullable=False
+        BigInteger, unique=True, nullable=False
     )
     disabled: Mapped[bool] = mapped_column(Boolean)
 
@@ -31,7 +31,7 @@ class Campaign(Base):
     firstfood: Mapped[int] = mapped_column(Integer, nullable=False)
     lastfood: Mapped[int] = mapped_column(Integer, nullable=False)
     user_tg_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('users.tg_id', ondelete='SET NULL'), nullable=False
+        BigInteger, ForeignKey('users.tg_id', ondelete='SET NULL'), nullable=False
     )
 
     __table_args__ = (

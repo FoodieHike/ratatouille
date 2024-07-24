@@ -101,7 +101,7 @@ async def create_handler(event_type,
         )
     else:
         await message.answer(
-            'Добро пожаловать в бот! Пропишите имя пользователя'
+            'Добро пожаловать в бот! Пропишите имя пользователя '
             'для использования нашего функционала:'
         )
         await state.set_state(UserRegistration.register)

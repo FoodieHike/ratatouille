@@ -61,7 +61,7 @@ class TokenData(BaseModel):
 class User(BaseModel):
     id: int
     username: str
-    password: str
+    password: str = None
     tg_id: int
     disabled: bool
 
