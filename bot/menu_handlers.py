@@ -104,7 +104,7 @@ async def menu_process(message: Message, state: FSMContext):
         full_days = data['days_amount']-2
         feeds = full_days*3        # количество приемов в полных днях
         # количество приемов пищи
-        meals_full_amount = feeds+data['extra_meal']
+        meals_full_amount = feeds + data['extra_meal']
         await message.answer(
             f'В этом походе, у вас получается всего'
             f' {meals_full_amount} приемов пищи.'
