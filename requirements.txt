@@ -1,31 +1,23 @@
-# Фреймворк и сервер для приложения
 fastapi==0.110.0
 uvicorn==0.28.0
 
-# Для соединения с бд
 asyncpg==0.29.0
 psycopg2==2.9.9
 SQLAlchemy==2.0.31
 
 pydantic
 
-# Для бота
 aiogram==3.3.0
 aiogram-calendar==0.5.0
 
-# Для создания pdf файлов для пользователей
 reportlab==4.1.0
 
-# Для .env окружения
 python-dotenv==1.0.1
 
-# Админ панель
 sqladmin==0.17.0
 
-# Для миграций
 alembic==1.13.1
 
-# Для авторизации пользователей
 bcrypt==4.0.1
 passlib==1.7.4
 PyJWT==2.8.0
