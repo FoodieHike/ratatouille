@@ -57,6 +57,8 @@ services:
       - ./migrations:/migrations
     depends_on:
       - db
+      - bot
+      - app
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
