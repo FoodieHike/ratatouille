@@ -101,8 +101,8 @@ async def menu_process(message: Message, state: FSMContext):
         data['feedtypes_amount'] = []
 
         # определение дней с полным набором приемов пищи
-        full_days = data['days_amount']-2
-        feeds = full_days*3        # количество приемов в полных днях
+        full_days = data['days_amount'] - 2
+        feeds = full_days * 3        # количество приемов в полных днях
         # количество приемов пищи
         meals_full_amount = feeds + data['extra_meal']
         await message.answer(
@@ -111,9 +111,9 @@ async def menu_process(message: Message, state: FSMContext):
             f'\nДавайте определим, что вы будете в них есть.'
         )
 
-        first_meal = data['firstfood']
-        last_day = data['days_amount']
-        last_meal = data['lastfood']
+        first_meal = data.get('firstfood')
+        last_day = data.get('days_amount')
+        last_meal = data.get('lastfood')
 
         records = await database.get_menu_all()
         feednames_dict = {
