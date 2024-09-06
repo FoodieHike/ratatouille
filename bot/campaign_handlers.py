@@ -18,6 +18,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import app.utils as utils
+from app.strings import *
 import app.database as database
 from bot_schemas import DBCreateContext, UserRegistration, ShowStates
 from app.schemas import FeedTypes
@@ -49,21 +50,18 @@ async def start_handler(message: Message, state: FSMContext):
     await state.clear()
     buttons = [
         [InlineKeyboardButton(
-            text='Создать новый поход', callback_data='create'
+            text=CREATE_NEW_CAMPAIGN, callback_data='create'
         )],
         [InlineKeyboardButton(
-            text='Показать запись похода', callback_data='show'
+            text=SHOW_CAMPAIGN, callback_data='show'
         )],
         [InlineKeyboardButton(
-            text='Составить меню для похода', callback_data='menu'
+            text=CREATE_MENU, callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await message.answer(
-        text='Привет. Меня зовут Hike Helper.'
-             'Я помогу тебе разработать меню для твоего похода '
-             'и рассчитаю все необходимые для него продукты.'
-             'Выбери, что будем делать дальше:',
+        text=BOT_WELCOME_MESSAGE,
              reply_markup=mrkp
     )
 
@@ -94,15 +92,14 @@ async def create_handler(event_type,
     user = await database.users_check(event_type.from_user.id)
     if user:
         await message.answer(
-            'Выберите дату начала похода: ',
+            CHOOSE_CAMPAIGN_DATE,
             reply_markup=await SimpleCalendar(
                 locale=await get_user_locale(event_type.from_user)
             ).start_calendar()
         )
     else:
         await message.answer(
-            'Добро пожаловать в бот! Пропишите имя пользователя '
-            'для использования нашего функционала:'
+            BOT_WELCOME_MESSAGE_AND_CREATE_USER
         )
         await state.set_state(UserRegistration.register)
 
