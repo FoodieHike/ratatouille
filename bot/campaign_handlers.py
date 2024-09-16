@@ -92,7 +92,7 @@ async def create_handler(event_type,
     user = await database.users_check(event_type.from_user.id)
     if user:
         await message.answer(
-            CHOOSE_CAMPAIGN_DATE,
+            CHOOSE_START_DATE,
             reply_markup=await SimpleCalendar(
                 locale=await get_user_locale(event_type.from_user)
             ).start_calendar()
@@ -117,11 +117,10 @@ async def registration_handler(message: Message, state: FSMContext):
     user = await database.users_check(tguid=message.from_user.id)
     if user:
         await message.answer(
-            f'Отлично, {message.text}, '
-            f'теперь можно приступить к записи похода',
+            START_CAMPAIGN_CREATE_1+message.text+START_CAMPAIGN_CREATE_2,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[[InlineKeyboardButton(
-                    text='Перейти к заполнению', callback_data='create',
+                    text=BUTTON_GO_TO_RECORD, callback_data='create',
                 )]]
             )
         )
@@ -149,11 +148,11 @@ async def process_simple_calendar(
             data['startdate'] = date
             await state.set_data(data)
             await query.message.answer(
-                f'Дата начала похода {date.strftime("%Y-%m-%d")}',
+                START_DATE+date.strftime("%Y-%m-%d"),
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=[
                         [InlineKeyboardButton(
-                            text='выбрать дату окончания', callback_data=' '
+                            text=BUTTON_DATE_SELECTION, callback_data=' '
                         )]
                     ])
             )
@@ -162,16 +161,16 @@ async def process_simple_calendar(
             data['enddate'] = date
             await state.set_data(data)
             await query.message.answer(
-                f'Дата окончания похода {date.strftime("%Y-%m-%d")}'
+                END_DATE+date.strftime("%Y-%m-%d")
             )
             buttons = [[
-                InlineKeyboardButton(text='Завтрак', callback_data='1'),
-                InlineKeyboardButton(text='Обед', callback_data='2'),
-                InlineKeyboardButton(text='Ужин', callback_data='3')
+                InlineKeyboardButton(text=BUTTON_BREAKFAST, callback_data='1'),
+                InlineKeyboardButton(text=BUTTON_LUNCH, callback_data='2'),
+                InlineKeyboardButton(text=BUTTON_DINNER, callback_data='3')
             ]]
             mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
             await query.message.answer(
-                'Введите первый прием пищи:', reply_markup=mrkp
+                ENTER_FIRST_MEAL, reply_markup=mrkp
             )
             await state.set_state(DBCreateContext.wait_for_firstfood)
 
@@ -180,7 +179,7 @@ async def process_simple_calendar(
 @routerCampaign.callback_query(DBCreateContext.wait_for_enddate)
 async def process_enddate(query: CallbackQuery, state: FSMContext):
     await query.message.answer(
-        'Выберите дату окончания похода: ',
+        CHOOSE_END_DATE,
         reply_markup=await SimpleCalendar(
             locale=await get_user_locale(query.from_user)
         ).start_calendar()
@@ -196,13 +195,13 @@ async def process_firstfood(query: CallbackQuery, state: FSMContext):
     data['firstfood'] = int(query.data)
     await state.set_data(data)
     buttons = [[
-        InlineKeyboardButton(text='Завтрак', callback_data='1'),
-        InlineKeyboardButton(text='Обед', callback_data='2'),
-        InlineKeyboardButton(text='Ужин', callback_data='3')
+        InlineKeyboardButton(text=BUTTON_BREAKFAST, callback_data='1'),
+        InlineKeyboardButton(text=BUTTON_LUNCH, callback_data='2'),
+        InlineKeyboardButton(text=BUTTON_DINNER, callback_data='3')
     ]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await query.message.answer(
-        'Введите последний прием пищи:', reply_markup=mrkp
+        ENTER_LAST_MEAL, reply_markup=mrkp
     )
     await state.set_state(DBCreateContext.wait_for_lastfood)
 
@@ -223,21 +222,22 @@ async def process_lastfood(query: CallbackQuery, state: FSMContext):
     lenght = lenght.days+1
     btn = [
         [InlineKeyboardButton(
-            text='Выйти в меню',
+            text=BUTTON_GO_TO_MENU,
             callback_data='menu_button'
         )],
         [InlineKeyboardButton(
-            text='Заполнить меню для похода',
+            text=BUTTON_CREATE_MENU,
             callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
 
     await query.message.answer(
-        f'Спасибо, данные у меня. '
-        f'Длительность похода составляет {lenght} '
-        f'{utils.syntax_specifier(lenght)}. '
-        f'ID Вашей записи - {record["id"]}',
+        FINAL_CAMP_CREATE_MSG_1+
+        str(lenght)+' '+
+        str(utils.syntax_specifier(lenght))+
+        FINAL_CAMP_CREATE_MSG_2+
+        str(record["id"]),
         reply_markup=mrkp
     )
     await state.clear()
@@ -266,14 +266,14 @@ async def show_handler(event_type, state: FSMContext, message: Message = None):
         message = event_type.message
     buttons = [
         [InlineKeyboardButton(
-            text='Показать все записи', callback_data='all'
+            text=BUTTON_SHOW_ALL, callback_data='all'
         )],
         [InlineKeyboardButton(
-            text='Показать конкретную', callback_data='current'
+            text=BUTTON_SHOW_SPECIFIC, callback_data='current'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await message.answer(text='Выбирете опцию:', reply_markup=mrkp)
+    await message.answer(text=BUTTON_CHOOSE_OPTION, reply_markup=mrkp)
 
 
 # хэндлер для выведения всех записей:
@@ -284,17 +284,17 @@ async def show_all_handler(query: CallbackQuery):
     )
     record = await database.get_campaign_all(tguid=query.from_user.id)
     btn = [[InlineKeyboardButton(
-        text='Выйти в меню', callback_data='menu_button'
+        text=BUTTON_GO_TO_MENU, callback_data='menu_button'
     )]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
     if record:
         rows = [
-            f'Запись {count + 1}:'
-            f'\nID записи - {row["id"]}; '
-            f'\nдата начала похода - {row["startdate"]}; '
-            f'\nдата окончания похода - {row["enddate"]};'
-            f'\nпервый прием пищи - {FeedTypes.from_num(int(row["firstfood"]))}; '
-            f'последний прием пищи - {FeedTypes.from_num(int(row["firstfood"]))}\n'
+             SHOW_ALL_MESSAGE_1+str(count + 1)+':'+
+            SHOW_ALL_MESSAGE_2+str(row["id"])+';'+
+            SHOW_ALL_MESSAGE_3+str(row["startdate"])+';'+
+            SHOW_ALL_MESSAGE_4+str(row["enddate"])+';'+
+            SHOW_ALL_MESSAGE_5+FeedTypes.from_num(int(row["firstfood"]))+';'+
+            SHOW_ALL_MESSAGE_6+FeedTypes.from_num(int(row["firstfood"]))+'\n'
             for count, row in enumerate(record)
         ]
 
