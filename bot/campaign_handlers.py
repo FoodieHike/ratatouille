@@ -50,13 +50,13 @@ async def start_handler(message: Message, state: FSMContext):
     await state.clear()
     buttons = [
         [InlineKeyboardButton(
-            text=CREATE_NEW_CAMPAIGN, callback_data='create'
+            text=BUTTON_CREATE, callback_data='create'
         )],
         [InlineKeyboardButton(
-            text=SHOW_CAMPAIGN, callback_data='show'
+            text=BUTTON_SHOW, callback_data='show'
         )],
         [InlineKeyboardButton(
-            text=CREATE_MENU, callback_data='menu'
+            text=BUTTON_CREATE_MENU, callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -289,22 +289,22 @@ async def show_all_handler(query: CallbackQuery):
     mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
     if record:
         rows = [
-             SHOW_ALL_MESSAGE_1+str(count + 1)+':'+
-            SHOW_ALL_MESSAGE_2+str(row["id"])+';'+
-            SHOW_ALL_MESSAGE_3+str(row["startdate"])+';'+
-            SHOW_ALL_MESSAGE_4+str(row["enddate"])+';'+
-            SHOW_ALL_MESSAGE_5+FeedTypes.from_num(int(row["firstfood"]))+';'+
-            SHOW_ALL_MESSAGE_6+FeedTypes.from_num(int(row["firstfood"]))+'\n'
+            SHOW_MESSAGE_1+str(count + 1)+':'+
+            SHOW_MESSAGE_2+str(row["id"])+';'+
+            SHOW_MESSAGE_3+str(row["startdate"])+';'+
+            SHOW_MESSAGE_4+str(row["enddate"])+';'+
+            SHOW_MESSAGE_5+FeedTypes.from_num(int(row["firstfood"]))+';'+
+            SHOW_MESSAGE_6+FeedTypes.from_num(int(row["firstfood"]))+'\n'
             for count, row in enumerate(record)
         ]
 
         await query.message.answer(
-            'Ваши данные:\n'+'\n'.join(rows),
+            YOUR_DATA+'\n'.join(rows),
             reply_markup=mrkp
         )
     else:
         await query.message.answer(
-            'У Вас пока нет записей, но можете их создать:',
+            NO_DATA_MSG,
             reply_markup=mrkp
         )
 
@@ -316,14 +316,14 @@ async def show_current_handler(query: CallbackQuery, state: FSMContext):
         chat_id=query.message.chat.id, message_id=query.message.message_id)
     record = await database.get_campaign_all(tguid=query.from_user.id)
     if record:
-        await query.message.answer('Введите ID записи:')
+        await query.message.answer(PUT_RECORD_ID)
         await state.set_state(ShowStates.putID)
     else:
         btn = [[InlineKeyboardButton(
-            text='Выйти в меню', callback_data='menu_button')]]
+            text=BUTTON_GO_TO_MENU, callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await query.message.answer(
-            'У Вас пока нет записей, но можете их создать:',
+            NO_DATA_MSG,
             reply_markup=mrkp)
 
 
@@ -338,22 +338,21 @@ async def show_current_process(message: Message, state: FSMContext):
         lastfood = FeedTypes.from_num(int(record['lastfood']))
 
         btn = [[InlineKeyboardButton(
-            text='Выйти в меню', callback_data='menu_button')]]
+            text=BUTTON_GO_TO_MENU, callback_data='menu_button')]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=btn)
         await message.answer(
-            f'Ваша запись:\n'
-            f'дата начала похода - {record["startdate"]}\n'
-            f'дата окончания похода -  {record["enddate"]}\n'
-            f'первый прием пищи - {firstfood}\n'
-            f'последний прием пищи - {lastfood}',
+            YOUR_DATA+
+            SHOW_MESSAGE_3+str(record["startdate"])+'\n'+
+            SHOW_MESSAGE_4+str(record["enddate"])+'\n'+
+            SHOW_MESSAGE_5+str(firstfood)+'\n'+
+            SHOW_MESSAGE_6+str(lastfood),
             reply_markup=mrkp
         )
     except TypeError:
-        await message.answer('Такой в ваших записях нет. Попробуйте другой id')
+        await message.answer(ERROR_NO_DATA)
     except ValueError:
         await message.answer(
-            '''Неправильная форма записи!
-Введите пожалуйста, корректный id (натуральное число):'''
+            ERROR_INVALID_DATA
         )
     else:
         await state.clear()
@@ -364,18 +363,18 @@ async def show_current_process(message: Message, state: FSMContext):
 async def menu_handler(query: CallbackQuery):
     buttons = [
         [InlineKeyboardButton(
-            text='Создать запись', callback_data='create'
+            text=BUTTON_CREATE, callback_data='create'
         )],
         [InlineKeyboardButton(
-            text='Показать запись', callback_data='show'
+            text=BUTTON_SHOW, callback_data='show'
         )],
         [InlineKeyboardButton(
-            text='Составить меню для похода', callback_data='menu'
+            text=BUTTON_CREATE_MENU, callback_data='menu'
         )]
     ]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
     await query.message.answer(
-        text='Что будем делать дальше?',
+        text=WHAT_NEXT,
         reply_markup=mrkp
     )
 
