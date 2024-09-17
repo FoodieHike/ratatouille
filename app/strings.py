@@ -15,16 +15,30 @@ ENTER_LAST_MEAL = 'Введите последний прием пищи:'
 FINAL_CAMP_CREATE_MSG_1 = '''Спасибо, данные у меня. 
 Длительность похода составляет '''
 FINAL_CAMP_CREATE_MSG_2 = '''. ID Вашей записи - '''
+
 SHOW_MESSAGE_1 = 'Запись '
 SHOW_MESSAGE_2 = '\nID записи - '
 SHOW_MESSAGE_3 = '\nдата начала похода - '
 SHOW_MESSAGE_4 = '\nдата окончания похода - '
 SHOW_MESSAGE_5 = '\nпервый прием пищи - '
 SHOW_MESSAGE_6 = '\nпоследний прием пищи - '
+
 YOUR_DATA = 'Ваши данные\n:'
 NO_DATA_MSG = 'У Вас пока нет записей, но можете их создать:'
 PUT_RECORD_ID = 'Введите ID записи:'
 WHAT_NEXT = 'Что будем делать дальше?'
+CHOOSE_OPTION = 'Выбирете опцию:'
+CONCRETE_OR_LAST = '''Меню для конкретного похода,
+ли возьмем последнюю запись?'''
+NO_DATA_YET = 'У вас пока нет записей'
+PEOPLE_AMOUNT = 'На сколько человек планируете поход?'
+
+MENU_CREATE_MSG_1 = 'В этом походе, у вас получается всего'
+MENU_CREATE_MSG_2 = ' приемов пищи.'
+MENU_CREATE_MSG_3 = '\nДавайте определим, что вы будете в них есть.'
+
+DAY = 'День'
+MEAL =' Прием пищи - '
 
 BUTTON_DATE_SELECTION = 'выбрать дату окончания'
 BUTTON_GO_TO_RECORD = 'Перейти к заполнению'
@@ -35,11 +49,11 @@ BUTTON_GO_TO_MENU = 'Выйти в меню'
 BUTTON_CREATE_MENU = 'Заполнить меню для похода'
 BUTTON_SHOW_ALL = 'Показать все записи'
 BUTTON_SHOW_SPECIFIC = 'Показать конкретную'
-BUTTON_CHOOSE_OPTION = 'Выбирете опцию:'
 BUTTON_CREATE = 'Создать запись'
 BUTTON_SHOW = 'Показать запись'
 BUTTON_CREATE_MENU = 'Составить меню для похода'
+BUTTON_BY_ID = 'Выбрать по ID'
+BUTTON_LAST_RECORD = 'Последняя запись'
 
 ERROR_NO_DATA = 'Такой в ваших записях нет. Попробуйте другой id'
-ERROR_INVALID_DATA = '''Неправильная форма записи!
-Введите пожалуйста, корректный id (натуральное число):'''
+ERROR_INVALID_DATA = 'Неверный формат данных! Необходимо ввести натуральное число!'

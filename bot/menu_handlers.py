@@ -14,6 +14,7 @@ import app.database as database
 import app.utils as utils
 from app.pdf_creator import pdf_creation
 from campaign_handlers import bot
+from app.strings import *
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -46,14 +47,12 @@ async def menu_handler(event_type, message: Message, state: FSMContext):
     if isinstance(event_type, CallbackQuery):
         message = event_type.message
     buttons = [[InlineKeyboardButton(
-        text='Выбрать по ID', callback_data='chooseID'
+        text=BUTTON_BY_ID, callback_data='chooseID'
     )], [InlineKeyboardButton(
-        text='Последняя запись', callback_data='lastone'
+        text=BUTTON_LAST_RECORD, callback_data='lastone'
     )]]
     mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await message.answer('Меню для конкретного похода,'
-                         'или возьмем последнюю запись?',
-                         reply_markup=mrkp)
+    await message.answer(CONCRETE_OR_LAST, reply_markup=mrkp)
     await state.clear()
 
 
@@ -63,7 +62,7 @@ async def menu_handler(event_type, message: Message, state: FSMContext):
 @routerMenu.callback_query(F.data == 'chooseID')
 async def id_for_meny_hsndler(query: CallbackQuery, state: FSMContext):
     await state.clear()
-    await query.message.answer('Напишите ID записи похода:')
+    await query.message.answer(PUT_RECORD_ID)
     await query.message.edit_reply_markup(reply_markup=None)
     await state.set_state(ChooseIDStates.wait_for_id)
 
@@ -77,7 +76,7 @@ async def choose_id_handler(message: Message, state: FSMContext):
         )
         lenght = record['enddate']-record['startdate']
     except TypeError:
-        await message.answer('У вас пока нет записей')
+        await message.answer(NO_DATA_YET)
     else:
         data = {
             'days_amount': lenght.days+1,
@@ -88,7 +87,7 @@ async def choose_id_handler(message: Message, state: FSMContext):
             'extra_meal': utils.extra_meal_counter(record)
         }
         await state.set_data(data)
-        await message.answer('На сколько человек планируете поход?')
+        await message.answer(PEOPLE_AMOUNT)
         await state.set_state(ChooseIDStates.wait_for_people_amount)
 
 
@@ -106,9 +105,9 @@ async def menu_process(message: Message, state: FSMContext):
         # количество приемов пищи
         meals_full_amount = feeds + data['extra_meal']
         await message.answer(
-            f'В этом походе, у вас получается всего'
-            f' {meals_full_amount} приемов пищи.'
-            f'\nДавайте определим, что вы будете в них есть.'
+            MENU_CREATE_MSG_1+meals_full_amount+
+            MENU_CREATE_MSG_2+
+            MENU_CREATE_MSG_3
         )
 
         first_meal = data.get('firstfood')
@@ -131,7 +130,7 @@ async def menu_process(message: Message, state: FSMContext):
         for day_n_meals in meals.items():
             for meal in day_n_meals[1]:
                 meal_message = await message.answer(
-                            f"День {day_n_meals[0]};  Прием пищи - {meal}",
+                            DAY+day_n_meals[0]+';'+MEAL+meal,
                             reply_markup=mrkp
                         )
                 utils.put_message_into_state(
@@ -139,9 +138,8 @@ async def menu_process(message: Message, state: FSMContext):
                 )
         await state.set_data(data)
     except ValueError:
-        await message.answer('Неверный формат данных! Необходимо ввести количество человек в цифрах.')
-    
-
+        await message.answer(ERROR_INVALID_DATA)
+ 
 
 # хэндлер для предоставления последней записи
 @routerMenu.callback_query(F.data == 'lastone')
@@ -154,20 +152,14 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
 
     except TypeError:
         buttons = [[InlineKeyboardButton(
-            text='Создать запись', callback_data='create'
+            text=BUTTON_CREATE, callback_data='create'
         )], [InlineKeyboardButton(
-            text='Вернуться в меню', callback_data='menu_button'
+            text=BUTTON_GO_TO_MENU, callback_data='menu_button'
         )]]
         mrkp = InlineKeyboardMarkup(inline_keyboard=buttons)
-        await query.message.answer(
-            '''К сожалению не удалось найти ни одной
-                записи. Может хотите создать новую?''', reply_markup=mrkp
-        )
+        await query.message.answer(NO_DATA_MSG, reply_markup=mrkp)
     except ValueError:
-        await query.message.answer(
-            '''Неправильная форма записи!
-            \nВведите пожалуйста корректный id (натуральное число):'''
-        )
+        await query.message.answer(ERROR_INVALID_DATA)
     else:
         data = {
             'days_amount': lenght.days+1,
@@ -178,7 +170,7 @@ async def menu_last_writing_handler(query: CallbackQuery, state: FSMContext):
             'extra_meal': utils.extra_meal_counter(record)
         }
         await state.set_data(data)
-        await query.message.answer('На сколько человек планируете поход?')
+        await query.message.answer(PEOPLE_AMOUNT)
         await state.set_state(ChooseIDStates.wait_for_people_amount)
 
 
