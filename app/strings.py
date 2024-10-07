@@ -38,7 +38,7 @@ MENU_CREATE_MSG_2 = ' приемов пищи.'
 MENU_CREATE_MSG_3 = '\nДавайте определим, что вы будете в них есть.'
 
 DAY = 'День'
-MEAL =' Прием пищи - '
+MEAL = ' Прием пищи - '
 
 BUTTON_DATE_SELECTION = 'выбрать дату окончания'
 BUTTON_GO_TO_RECORD = 'Перейти к заполнению'
